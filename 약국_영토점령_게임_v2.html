@@ -529,19 +529,11 @@
     <div style="font-size:12px;color:#aaa;">총 2,389개 약국</div>
     <div class="spacer"></div>
 
-    <div id="room-badge" style="display:none;align-items:center;gap:5px;background:rgba(233,69,96,0.15);border:1px solid #e94560;padding:2px 8px;border-radius:12px;font-size:11px;">
-        <span>&#127968;</span>
-        <span id="room-code-display" style="font-weight:700;letter-spacing:1px;"></span>
-        <button onclick="copyRoomLink()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:2px 8px;border-radius:10px;cursor:pointer;font-size:11px;">&#128279; 공유</button>
-    </div>
-    <div id="sync-status" style="display:none;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(50,205,50,0.15);border:1px solid #4CAF50;">
-        <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#4CAF50;display:inline-block;animation:pulse 1.5s infinite;"></span>
-        <span id="sync-text">연결됨</span>
-    </div>
-    <div id="current-player-badge" style="display:none;align-items:center;gap:8px;background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:20px;cursor:pointer" onclick="showSetup()">
+    <div id="room-badge" style="display:none;"></div>
+    <div id="sync-status" style="display:none;"></div>
+    <div id="current-player-badge" style="display:none;align-items:center;gap:8px;background:rgba(255,255,255,0.08);padding:6px 12px;border-radius:20px;">
         <div id="cur-dot" style="width:10px;height:10px;border-radius:50%;background:#e94560;"></div>
         <span id="cur-name" style="font-size:13px;font-weight:700"></span>
-        <span style="font-size:11px;color:#aaa">▾ 전환</span>
     </div>
 
     <div style="display:flex;gap:6px;">
@@ -560,63 +552,50 @@
 <!-- SETUP PANEL -->
 <div id="setup-panel">
     <div class="setup-box">
-        <h2>🗺️ 약국 영토 점령</h2>
-        <div style="display:flex;gap:8px;margin-bottom:16px;margin-top:12px;">
-            <button id="btn-online" onclick="selectMode('online')"
-                style="flex:1;padding:10px;border-radius:10px;border:2px solid #e94560;background:linear-gradient(135deg,#e94560,#c62a47);color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">
-                &#127760; 온라인 멀티플레이
-            </button>
-            <button id="btn-local" onclick="selectMode('local')"
-                style="flex:1;padding:10px;border-radius:10px;border:2px solid #555;background:rgba(255,255,255,0.07);color:#aaa;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">
-                &#128190; 로컬 저장
-            </button>
-        </div>
-        <div id="online-room-area" style="margin-bottom:14px;">
-            <div style="display:flex;gap:8px;margin-bottom:8px;">
-                <button onclick="createNewRoom()"
-                    style="flex:1;padding:9px;border-radius:8px;background:rgba(233,69,96,0.2);border:1.5px solid #e94560;color:#e94560;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
-                    &#10024; 새 방 만들기
-                </button>
-                <button onclick="toggleJoinRoom()"
-                    style="flex:1;padding:9px;border-radius:8px;background:rgba(255,255,255,0.07);border:1.5px solid #555;color:#aaa;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
-                    &#128279; 방 코드로 참여
-                </button>
-            </div>
-            <div id="join-room-input" style="display:none;">
-                <input type="text" id="room-code-input" placeholder="방 코드 입력 (예: ABC123)" maxlength="8"
-                    style="width:100%;background:rgba(255,255,255,0.07);border:1px solid #555;border-radius:8px;padding:10px;color:#fff;font-size:14px;text-transform:uppercase;letter-spacing:2px;text-align:center;box-sizing:border-box;margin-bottom:8px;">
-            </div>
-            <div id="current-room-display" style="text-align:center;font-size:13px;color:#aaa;padding:8px;background:rgba(255,255,255,0.05);border-radius:8px;display:none;">
-                방 코드: <strong id="setup-room-code" style="color:#e94560;letter-spacing:2px;font-size:16px;"></strong>
-            </div>
-        </div>
+        <h2>🗺️ 더마화장품 영업 게임</h2>
         <p class="subtitle">입점 완료한 약국을 클릭해서 내 영역으로 점령하세요!</p>
 
-        <label style="font-size:13px;color:#aaa;display:block;margin-bottom:6px;">👤 내 이름 / 닉네임을 입력하세요</label>
-        <input type="text" id="player-name-input" class="my-input" placeholder="예: 김영업, 최철수, 팀A..." maxlength="10">
-
-        <label style="font-size:13px;color:#aaa;display:block;margin-bottom:6px;">🎨 내 색상을 선택하세요</label>
-        <select id="player-color-select" class="my-select">
-            <option value="#FF6B6B">🔴 레드 팀</option>
-            <option value="#4ECDC4">🟢 티얼 팀</option>
-            <option value="#45B7D1">🔵 블루 팀</option>
-            <option value="#96CEB4">🟩 민트 팀</option>
-            <option value="#FFEAA7">🟡 옐로우 팀</option>
-            <option value="#DDA0DD">🟣 퍼플 팀</option>
-            <option value="#FFA07A">🟠 오렌지 팀</option>
-            <option value="#98D8C8">🩵 스카이 팀</option>
+        <label style="font-size:14px;color:#ccc;display:block;margin-bottom:8px;font-weight:700;">📍 내 지점을 선택하세요</label>
+        <select id="branch-select" class="my-select" onchange="onBranchSelected()" style="margin-bottom:12px;font-size:14px;padding:12px;">
+            <option value="">-- 지점 선택 --</option>
+            <option value="경남영업지점">경남영업지점</option>
+            <option value="경북영업지점">경북영업지점</option>
+            <option value="서부영업지점">서부영업지점</option>
+            <option value="수도권1지점">수도권1지점</option>
+            <option value="수도권2지점">수도권2지점</option>
+            <option value="수도권3지점">수도권3지점</option>
+            <option value="수도권4지점">수도권4지점</option>
+            <option value="중부영업지점">중부영업지점</option>
         </select>
 
-        <div id="existing-players-area" style="display:none;margin-bottom:14px;">
-            <label style="font-size:13px;color:#aaa;display:block;margin-bottom:6px;">또는 기존 플레이어를 선택하세요</label>
-            <div id="existing-players-list"></div>
+        <div id="manager-area" style="display:none;margin-bottom:14px;">
+            <label style="font-size:14px;color:#ccc;display:block;margin-bottom:8px;font-weight:700;">👤 담당자를 선택하세요</label>
+            <select id="manager-pick" class="my-select" onchange="onManagerPicked()" style="font-size:14px;padding:12px;"></select>
         </div>
 
-        <button class="btn-start" onclick="startGameMulti()">🚀 게임 시작!</button>
+        <div id="selected-info" style="display:none;background:rgba(233,69,96,0.1);border:1px solid #e94560;border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;">
+            <div style="font-size:13px;color:#aaa;margin-bottom:4px;">선택된 정보</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                <div id="sel-color-dot" style="width:16px;height:16px;border-radius:50%;"></div>
+                <span id="sel-branch-name" style="font-size:15px;font-weight:700;color:#fff;"></span>
+                <span style="color:#555;">|</span>
+                <span id="sel-manager-name" style="font-size:15px;font-weight:700;color:#e94560;"></span>
+            </div>
+        </div>
 
-        <p style="text-align:center;font-size:11px;color:#666;margin-top:14px;"><span id="storage-note">&#127760; 온라인 모드: Firebase로 실시간 공유</span></p>
+        <button class="btn-start" id="btn-game-start" onclick="startGameMulti()" disabled style="opacity:0.5;cursor:not-allowed;">🚀 게임 시작!</button>
+
+        <p style="text-align:center;font-size:11px;color:#666;margin-top:14px;"><span id="storage-note">🌐 온라인 모드: 실시간 공유</span></p>
     </div>
 </div>
+
+<!-- hidden fields for backward compat -->
+<input type="hidden" id="player-name-input" value="">
+<select id="player-color-select" style="display:none;"><option value="#FF6B6B"></option></select>
+<div id="existing-players-area" style="display:none;"><div id="existing-players-list"></div></div>
+<div id="online-room-area" style="display:none;"></div>
+<div id="join-room-input" style="display:none;"><input type="text" id="room-code-input"></div>
+<div id="current-room-display" style="display:none;"><strong id="setup-room-code"></strong></div>
 
 <!-- SIDE PANEL TOGGLE -->
 <button id="panel-toggle" class="open" onclick="togglePanel()">◀</button>
@@ -1208,93 +1187,105 @@ if (existingNames.length > 0) {
 // ===== FIREBASE MULTI-PLAYER SUPPORT =====
 var _gameMode = 'online';
 var _db = null;
-var _roomId = null;
+var _roomId = 'DERMA_MAIN'; // 고정 방 코드 - 모든 지점이 하나의 맵 공유
 var _fbListener = null;
 var _currentName = null;
 
-function generateRoomCode() {
-    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var code = '';
-    for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
-}
+// ===== 지점별 담당자·색상 자동 매핑 =====
+const BRANCH_CONFIG = {
+    '경남영업지점': { color: '#FF6B6B', managers: ['김효동', '조순홍'] },
+    '경북영업지점': { color: '#4ECDC4', managers: ['김재영', '김정수'] },
+    '서부영업지점': { color: '#45B7D1', managers: ['강지훈', '송훈'] },
+    '수도권1지점': { color: '#96CEB4', managers: ['김창규', '한병훈'] },
+    '수도권2지점': { color: '#FFEAA7', managers: ['한병훈'] },
+    '수도권3지점': { color: '#DDA0DD', managers: ['김창규', '이현주'] },
+    '수도권4지점': { color: '#FFA07A', managers: ['유병준', '이현주'] },
+    '중부영업지점': { color: '#98D8C8', managers: ['이준대'] }
+};
 
-function selectMode(mode) {
-    _gameMode = mode;
-    var btnO = document.getElementById('btn-online');
-    var btnL = document.getElementById('btn-local');
-    var area = document.getElementById('online-room-area');
-    var note = document.getElementById('storage-note');
-    if (mode === 'online') {
-        btnO.style.background = 'linear-gradient(135deg,#e94560,#c62a47)';
-        btnO.style.borderColor = '#e94560'; btnO.style.color = '#fff';
-        btnL.style.background = 'rgba(255,255,255,0.07)';
-        btnL.style.borderColor = '#555'; btnL.style.color = '#aaa';
-        if (area) area.style.display = 'block';
-        if (note) note.textContent = '🌐 온라인 모드: Firebase로 실시간 공유';
+function onBranchSelected() {
+    const sel = document.getElementById('branch-select');
+    const branch = sel.value;
+    const mgrArea = document.getElementById('manager-area');
+    const mgrPick = document.getElementById('manager-pick');
+    const info = document.getElementById('selected-info');
+    const btn = document.getElementById('btn-game-start');
+
+    if (!branch) {
+        mgrArea.style.display = 'none';
+        info.style.display = 'none';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        return;
+    }
+
+    const cfg = BRANCH_CONFIG[branch];
+    if (!cfg) return;
+
+    // 담당자 드롭다운 설정
+    mgrPick.innerHTML = '<option value="">-- 담당자 선택 --</option>';
+    cfg.managers.forEach(m => {
+        mgrPick.innerHTML += `<option value="${m}">${m}</option>`;
+    });
+    
+    if (cfg.managers.length === 1) {
+        // 담당자가 1명이면 자동 선택
+        mgrPick.value = cfg.managers[0];
+        mgrArea.style.display = 'block';
+        onManagerPicked();
     } else {
-        btnL.style.background = 'linear-gradient(135deg,#555,#333)';
-        btnL.style.borderColor = '#888'; btnL.style.color = '#fff';
-        btnO.style.background = 'rgba(255,255,255,0.07)';
-        btnO.style.borderColor = '#555'; btnO.style.color = '#aaa';
-        if (area) area.style.display = 'none';
-        if (note) note.textContent = '💾 로컬 모드: 이 브라우저에만 저장';
-        _roomId = null;
+        mgrArea.style.display = 'block';
+        mgrPick.value = '';
+        info.style.display = 'none';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
     }
 }
 
-function createNewRoom() {
-    _roomId = generateRoomCode();
-    var disp = document.getElementById('current-room-display');
-    var code = document.getElementById('setup-room-code');
-    var joinArea = document.getElementById('join-room-input');
-    if (code) code.textContent = _roomId;
-    if (disp) disp.style.display = 'block';
-    if (joinArea) joinArea.style.display = 'none';
-}
+function onManagerPicked() {
+    const branch = document.getElementById('branch-select').value;
+    const manager = document.getElementById('manager-pick').value;
+    const info = document.getElementById('selected-info');
+    const btn = document.getElementById('btn-game-start');
 
-function toggleJoinRoom() {
-    var area = document.getElementById('join-room-input');
-    var disp = document.getElementById('current-room-display');
-    if (!area) return;
-    if (area.style.display === 'none') {
-        area.style.display = 'block';
-        if (disp) disp.style.display = 'none';
-        _roomId = null;
-    } else {
-        area.style.display = 'none';
+    if (!branch || !manager) {
+        info.style.display = 'none';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+        return;
     }
-}
 
-function copyRoomLink() {
-    if (!_roomId) return;
-    var url = location.origin + location.pathname + '?room=' + _roomId;
-    navigator.clipboard.writeText(url).then(function() { showToast('🔗 링크가 복사되었습니다!'); });
+    const cfg = BRANCH_CONFIG[branch];
+    document.getElementById('sel-color-dot').style.background = cfg.color;
+    document.getElementById('sel-branch-name').textContent = branch;
+    document.getElementById('sel-manager-name').textContent = manager;
+    info.style.display = 'block';
+    
+    // 히든 필드에 값 세팅 (기존 startGame 호환)
+    document.getElementById('player-name-input').value = manager;
+    const colorSel = document.getElementById('player-color-select');
+    // 색상 옵션 동적 설정
+    colorSel.innerHTML = `<option value="${cfg.color}" selected>${branch}</option>`;
+    colorSel.value = cfg.color;
+
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
 }
 
 function setSyncStatus(connected, text) {
-    var el = document.getElementById('sync-status');
-    var dot = document.getElementById('sync-dot');
-    var txt = document.getElementById('sync-text');
-    if (!el) return;
-    el.style.display = 'flex';
-    if (dot) dot.style.background = connected ? '#4CAF50' : '#e94560';
-    if (txt) txt.textContent = text;
+    // 간소화: 콘솔에만 출력
+    console.log('[Sync]', connected ? '✅' : '❌', text);
 }
 
 function showRoomBadge() {
-    var badge = document.getElementById('room-badge');
-    var codeEl = document.getElementById('room-code-display');
-    if (!badge || !_roomId) return;
-    badge.style.display = 'flex';
-    if (codeEl) codeEl.textContent = _roomId;
-    var url = new URL(window.location);
-    url.searchParams.set('room', _roomId);
-    window.history.replaceState({}, '', url);
+    // 방 배지 숨김 (더이상 사용 안함)
 }
 
 async function initFirebase() {
-    // ★★★ Firebase 프로젝트 설정을 아래에 입력하세요 ★★★
     var firebaseConfig = {
         apiKey: "AIzaSyCx5eW-hjKCSgTm1KReUsFaVm-oB17iN2s",
         authDomain: "pharmacy-game-5b71d.firebaseapp.com",
@@ -1306,20 +1297,17 @@ async function initFirebase() {
     };
     if (firebaseConfig.apiKey === "YOUR_API_KEY") {
         console.warn("[멀티플레이] Firebase 미설정 → 로컬로 실행");
-        setSyncStatus(false, "Firebase 미설정");
         showToast("⚠️ Firebase 미설정 - 로컬 모드로 실행 중");
         return false;
     }
     try {
         var imp = window._fbImports;
-        if (!imp) { setSyncStatus(false, "SDK 로드 실패"); return false; }
+        if (!imp) { return false; }
         var app = imp.initializeApp(firebaseConfig);
         _db = imp.getDatabase(app);
-        setSyncStatus(true, "연결됨");
         return true;
     } catch(e) {
         console.error("Firebase 초기화 실패:", e);
-        setSyncStatus(false, "연결 실패");
         return false;
     }
 }
@@ -1366,7 +1354,6 @@ function startFirebaseListener() {
 
                 refreshMarker(i);
                 
-                // 팝업이 열려있다면 팝업 안의 토글 버튼 상태도 업데이트
                 var yesBtn = document.getElementById('tbtn-yes-'+i);
                 var noBtn = document.getElementById('tbtn-no-'+i);
                 if (yesBtn && noBtn) {
@@ -1381,14 +1368,12 @@ function startFirebaseListener() {
             }
         });
         
-        // 데이터 변화가 있었다면 리더보드 및 내 실적 UI 갱신
         if (changed) { 
             updateLeaderboard(); 
             if(typeof updateIncentive === 'function') updateIncentive();
         }
     });
 
-    // 접속한 플레이어 목록 동기화
     var plRef = imp.ref(_db, 'rooms/' + _roomId + '/players');
     imp.onValue(plRef, function(snap) {
         if (!snap.exists()) return;
@@ -1414,65 +1399,50 @@ async function saveToFirebase(idx) {
     catch(e) { console.error("Firebase 저장 오류:", e); }
 }
 
-// startGame 래퍼
+// startGame 래퍼 (간소화)
 async function startGameMulti() {
-    if (_gameMode === 'online') {
-        // 방 코드 입력 처리
-        var joinArea = document.getElementById('join-room-input');
-        var joinInput = document.getElementById('room-code-input');
-        if (joinArea && joinArea.style.display !== 'none' && joinInput && joinInput.value.trim()) {
-            _roomId = joinInput.value.trim().toUpperCase();
-        }
-        if (!_roomId) createNewRoom();
+    const branch = document.getElementById('branch-select').value;
+    const manager = document.getElementById('manager-pick').value;
+    if (!branch || !manager) {
+        showToast('⚠️ 지점과 담당자를 선택해주세요');
+        return;
     }
 
-    // 이름 저장
-    var ni = document.getElementById('player-name-input');
-    _currentName = ni ? ni.value.trim() : '';
+    _currentName = manager;
 
     // 원본 startGame 실행
     startGame();
 
-    if (_gameMode === 'online') {
-        var ok = await initFirebase();
-        if (ok) {
-            // 내 정보를 Firebase에 등록
-            if (_currentName) {
-                const imp = window._fbImports;
-                const myColor = document.getElementById('player-color').value || '#B22222';
-                imp.update(imp.ref(_db), {
-                    ['rooms/' + _roomId + '/players/' + _currentName]: {
-                        color: myColor,
-                        joined_at: Date.now()
-                    }
-                });
+    // Firebase 온라인 모드
+    var ok = await initFirebase();
+    if (ok) {
+        const imp = window._fbImports;
+        const myColor = BRANCH_CONFIG[branch].color;
+        imp.update(imp.ref(_db), {
+            ['rooms/' + _roomId + '/players/' + _currentName]: {
+                color: myColor,
+                branch: branch,
+                joined_at: Date.now()
             }
+        });
 
-            await loadFromFirebase();
-            refreshAllMarkers();
-            updateLeaderboard(); 
-            if(typeof updateIncentive === 'function') updateIncentive();
-            startFirebaseListener();
-            showRoomBadge();
-        }
+        await loadFromFirebase();
+        refreshAllMarkers();
+        updateLeaderboard(); 
+        if(typeof updateIncentive === 'function') updateIncentive();
+        startFirebaseListener();
+    }
+
+    // 선택한 지점으로 지도 포커스
+    if (typeof setBranchFilter === 'function') {
+        setBranchFilter(branch);
     }
 }
 
 // claimPharmacy / unclaimPharmacy 오버라이드
 var _origClaim = null, _origUnclaim = null;
 window.addEventListener('DOMContentLoaded', function() {
-    // selectMode 초기화
-    selectMode('online');
-
-    // URL 파라미터 처리
-    var urlRoom = new URLSearchParams(window.location.search).get('room');
-    if (urlRoom) {
-        _roomId = urlRoom;
-        var joinInput = document.getElementById('room-code-input');
-        var joinArea = document.getElementById('join-room-input');
-        if (joinInput) joinInput.value = urlRoom;
-        if (joinArea) joinArea.style.display = 'block';
-    }
+    _gameMode = 'online';
 });
 
 // claim/unclaim 함수 오버라이드 (지연 실행)
