@@ -570,8 +570,8 @@
         </select>
 
         <div id="manager-area" style="display:none;margin-bottom:14px;">
-            <label style="font-size:14px;color:#ccc;display:block;margin-bottom:8px;font-weight:700;">👤 담당자를 선택하세요</label>
-            <select id="manager-pick" class="my-select" onchange="onManagerPicked()" style="font-size:14px;padding:12px;"></select>
+            <label style="font-size:14px;color:#ccc;display:block;margin-bottom:8px;font-weight:700;">👤 담당자 성함을 입력하세요</label>
+            <input type="text" id="manager-manual-input" placeholder="예: 홍길동 (입력 후 게임 시작)" oninput="onManagerPicked()" class="my-input" autocomplete="off" style="width:100%;font-size:14px;padding:12px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid #555;border-radius:10px;">
         </div>
 
         <div id="selected-info" style="display:none;background:rgba(233,69,96,0.1);border:1px solid #e94560;border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;">
@@ -1209,7 +1209,6 @@ function onBranchSelected() {
     const sel = document.getElementById('branch-select');
     const branch = sel.value;
     const mgrArea = document.getElementById('manager-area');
-    const mgrPick = document.getElementById('manager-pick');
     const info = document.getElementById('selected-info');
     const btn = document.getElementById('btn-game-start');
 
@@ -1225,30 +1224,14 @@ function onBranchSelected() {
     const cfg = BRANCH_CONFIG[branch];
     if (!cfg) return;
 
-    // 담당자 드롭다운 설정
-    mgrPick.innerHTML = '<option value="">-- 담당자 선택 --</option>';
-    cfg.managers.forEach(m => {
-        mgrPick.innerHTML += `<option value="${m}">${m}</option>`;
-    });
-    
-    if (cfg.managers.length === 1) {
-        // 담당자가 1명이면 자동 선택
-        mgrPick.value = cfg.managers[0];
-        mgrArea.style.display = 'block';
-        onManagerPicked();
-    } else {
-        mgrArea.style.display = 'block';
-        mgrPick.value = '';
-        info.style.display = 'none';
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.style.cursor = 'not-allowed';
-    }
+    mgrArea.style.display = 'block';
+    onManagerPicked();
 }
 
 function onManagerPicked() {
     const branch = document.getElementById('branch-select').value;
-    const manager = document.getElementById('manager-pick').value;
+    const manualInput = document.getElementById('manager-manual-input');
+    const manager = manualInput ? manualInput.value.trim() : '';
     const info = document.getElementById('selected-info');
     const btn = document.getElementById('btn-game-start');
 
@@ -1266,10 +1249,8 @@ function onManagerPicked() {
     document.getElementById('sel-manager-name').textContent = manager;
     info.style.display = 'block';
     
-    // 히든 필드에 값 세팅 (기존 startGame 호환)
     document.getElementById('player-name-input').value = manager;
     const colorSel = document.getElementById('player-color-select');
-    // 색상 옵션 동적 설정
     colorSel.innerHTML = `<option value="${cfg.color}" selected>${branch}</option>`;
     colorSel.value = cfg.color;
 
@@ -1404,7 +1385,9 @@ async function saveToFirebase(idx) {
 // startGame 래퍼 (간소화)
 async function startGameMulti() {
     const branch = document.getElementById('branch-select').value;
-    const manager = document.getElementById('manager-pick').value;
+    const manualInput = document.getElementById('manager-manual-input');
+    const manager = manualInput ? manualInput.value.trim() : '';
+
     if (!branch || !manager) {
         showToast('⚠️ 지점과 담당자를 선택해주세요');
         return;
@@ -1502,15 +1485,10 @@ function setBranchFilter(branch) {
 /* 담당자 필터 */
 function setManagerFilter(mgr) {
     currentManager = mgr;
-    if (mgr) {
-        // 해당 담당자 약국 bounds에 fit
-        const pts = PHARMACY_DATA
-            .filter(p => p.manager === mgr && p.lat)
-            .map(p => [p.lat, p.lng]);
-        if (pts.length) {
-            const bounds = L.latLngBounds(pts);
-            map.flyToBounds(bounds, {padding:[40,40], maxZoom:14, duration:1.2});
-        }
+    const targetBranch = currentBranch && currentBranch !== 'all' ? currentBranch : document.getElementById('branch-select').value;
+    if (targetBranch && BRANCH_FOCUS[targetBranch]) {
+        const arr = BRANCH_FOCUS[targetBranch];
+        map.flyTo([arr[0], arr[1]], arr[2], {duration: 1.2});
     }
     refreshAllMarkers();
     updateIncentive();
