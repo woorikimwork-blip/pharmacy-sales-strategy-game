@@ -6,6 +6,12 @@
     <title>🏆 약국 영토 점령 게임</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -811,12 +817,14 @@ function startGame() {
 }
 
 // =================== MAP ===================
+let markerClusterGroup = null;
+
 function initMap() {
     map = L.map('map', {
         center: [36.5, 127.8],
         zoom: 7,
         zoomControl: true,
-        preferCanvas: true
+        preferCanvas: false
     });
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -825,9 +833,41 @@ function initMap() {
         maxZoom: 19
     }).addTo(map);
 
-    // Draw all pharmacy markers
+    // MarkerCluster 그룹 초기화
+    markerClusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        chunkedLoading: true,
+        chunkInterval: 100,
+        chunkDelay: 50,
+        disableClusteringAtZoom: 15,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        iconCreateFunction: function(cluster) {
+            const count = cluster.getChildCount();
+            let size = 'small';
+            if (count >= 100) size = 'large';
+            else if (count >= 20) size = 'medium';
+            const color = count >= 100 ? '#e94560' : count >= 20 ? '#f39c12' : '#4AABDB';
+            return L.divIcon({
+                html: `<div style="
+                    background:${color};
+                    color:#fff;
+                    border-radius:50%;
+                    width:${size==='large'?44:size==='medium'?36:28}px;
+                    height:${size==='large'?44:size==='medium'?36:28}px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-weight:900;font-size:${size==='large'?14:12}px;
+                    border:2px solid rgba(255,255,255,0.4);
+                    box-shadow:0 0 8px rgba(0,0,0,0.5);
+                ">${count}</div>`,
+                className: 'custom-cluster',
+                iconSize: [size==='large'?44:size==='medium'?36:28, size==='large'?44:size==='medium'?36:28]
+            });
+        }
+    });
+
+    // 마커 일괄 생성
     PHARMACY_DATA.forEach((pharm, idx) => {
-        // lat/lng 없는 약국은 건너뜀
         if (!pharm.lat || !pharm.lng) {
             pharmacyMarkers.push(null);
             return;
@@ -848,9 +888,11 @@ function initMap() {
 
         marker.pharmacyIdx = idx;
         marker.bindPopup(() => buildPopup(idx), { maxWidth: 260, className: 'game-popup' });
-        marker.addTo(map);
         pharmacyMarkers.push(marker);
+        markerClusterGroup.addLayer(marker);
     });
+
+    map.addLayer(markerClusterGroup);
 }
 
 function getBaseColor(market_type) {
@@ -991,10 +1033,11 @@ function applyVisibility(idx, m) {
     // 수기입력 방식 도입으로 담당자 기반 마커 필터링을 비활성화합니다. (모든 직원이 해당 지점의 전체 약국을 볼 수 있음)
     // if (typeof currentManager !== 'undefined' && currentManager && pharm.manager  !== currentManager) show = false;
 
+    if (!markerClusterGroup) return;
     if (show) {
-        if (!map.hasLayer(m)) map.addLayer(m);
+        if (!markerClusterGroup.hasLayer(m)) markerClusterGroup.addLayer(m);
     } else {
-        if (map.hasLayer(m)) map.removeLayer(m);
+        if (markerClusterGroup.hasLayer(m)) markerClusterGroup.removeLayer(m);
     }
 }
 
