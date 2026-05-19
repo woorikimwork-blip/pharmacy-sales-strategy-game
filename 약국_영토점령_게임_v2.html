@@ -1275,38 +1275,9 @@ function updateMyStats() {
     const pct = total > 0 ? ((isMaster ? claimed : myCount) / total * 100).toFixed(1) : '0.0';
     document.getElementById('my-progress-bar').style.width = pct + '%';
     document.getElementById('my-progress-text').textContent = (isMaster ? claimed : myCount) + ' / ' + total;
-} else {
-        // 일반 유저는 본인 지점의 약국 통계 표시
-        const myBranchPharmacies = PHARMACY_DATA.filter(p => p.branch === user);
-        total = myBranchPharmacies.length;
-        claimed = Object.entries(gameState.pharmacyStates).filter(([idx, s]) => {
-            const p = PHARMACY_DATA[parseInt(idx)];
-            return p && p.branch === user && s.claimed_by;
-        }).length;
-    }
-    
-    const myCount = user ? Object.values(gameState.pharmacyStates).filter(s => s.claimed_by === user).length : 0;
-    const remain = total - claimed;
-
-    document.getElementById('stat-mine').textContent = (isMaster ? claimed : myCount) + '개';
-    document.getElementById('stat-remain').textContent = remain + '개';
-    document.getElementById('my-score').textContent = isMaster ? claimed : myCount;
-
-    // Rank (일반 지점 영업팀 간의 순위)
-    const scores = {};
-    Object.values(gameState.pharmacyStates).forEach(s => {
-        if (s.claimed_by) {
-            scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
-        }
-    });
-    const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
-    const rank = user ? (sorted.findIndex(([n]) => n === user) + 1) : 0;
-    document.getElementById('stat-rank').textContent = rank > 0 ? rank + '위' : '-';
-
-    const pct = total > 0 ? ((isMaster ? claimed : myCount) / total * 100).toFixed(1) : '0.0';
-    document.getElementById('my-progress-bar').style.width = pct + '%';
-    document.getElementById('my-progress-text').textContent = (isMaster ? claimed : myCount) + ' / ' + total;
 }
+
+
 
 // =================== ACHIEVEMENTS ===================
 function checkAchievements() {
