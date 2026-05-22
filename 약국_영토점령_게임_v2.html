@@ -1498,13 +1498,17 @@ function validateSetupForm() {
     }
     
     if (branch && manager) {
+        btn.removeAttribute('disabled');
         btn.disabled = false;
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
+        btn.style.pointerEvents = 'auto';
     } else {
+        btn.setAttribute('disabled', 'true');
         btn.disabled = true;
         btn.style.opacity = '0.5';
         btn.style.cursor = 'not-allowed';
+        btn.style.pointerEvents = 'none';
     }
 }
 
@@ -1875,42 +1879,65 @@ function attachFirebaseAuthWatcher() {
 
 // startGame 래퍼 (간소화)
 async function startGameMulti() {
-    const branch = document.getElementById('branch-select').value;
-    const managerName = (document.getElementById('setup-manager-input').value || '').trim();
-    if (!branch || !managerName) {
-        showToast('⚠️ 지점과 담당자 이름을 모두 입력해주세요');
-        return;
-    }
+    try {
+        console.log("startGameMulti 시작됨");
+        const branch = document.getElementById('branch-select').value;
+        const managerName = (document.getElementById('setup-manager-input').value || '').trim();
+        if (!branch || !managerName) {
+            showToast('⚠️ 지점과 담당자 이름을 모두 입력해주세요');
+            return;
+        }
 
-    _currentName = branch + "_" + managerName;
-    document.getElementById('player-name-input').value = _currentName; 
+        _currentName = branch + "_" + managerName;
+        
+        // 폼 강제 유효성 검증
+        const nameInput = document.getElementById('player-name-input');
+        if (nameInput) {
+            nameInput.value = _currentName;
+        }
 
-    // 원본 startGame 실행
-    startGame();
+        // 원본 startGame 실행
+        console.log("startGame 호출 전");
+        startGame();
+        console.log("startGame 호출 완료");
 
-    // Firebase 온라인 모드
-    var ok = await initFirebase();
-    if (ok) {
-        const imp = window._fbImports;
-        const myColor = BRANCH_CONFIG[branch].color;
-        imp.update(imp.ref(_db), {
-            ['rooms/' + _roomId + '/players/' + _currentName]: {
-                color: myColor,
-                branch: branch,
-                joined_at: Date.now()
-            }
-        });
+        // Firebase 온라인 모드
+        console.log("Firebase 초기화 시도");
+        var ok = await initFirebase();
+        if (ok) {
+            console.log("Firebase 초기화 성공, 데이터 동기화 시작");
+            const imp = window._fbImports;
+            const myColor = BRANCH_CONFIG[branch].color;
+            await imp.update(imp.ref(_db), {
+                ['rooms/' + _roomId + '/players/' + _currentName]: {
+                    color: myColor,
+                    branch: branch,
+                    joined_at: Date.now()
+                }
+            });
 
-        await loadFromFirebase();
-        refreshAllMarkers();
-        updateLeaderboard(); 
-        if(typeof updateIncentive === 'function') updateIncentive();
-        startFirebaseListener();
-    }
+            await loadFromFirebase();
+            refreshAllMarkers();
+            updateLeaderboard(); 
+            if(typeof updateIncentive === 'function') updateIncentive();
+            startFirebaseListener();
+        } else {
+            console.warn("Firebase 초기화 실패, 오프라인 모드 진행");
+        }
 
-    // 선택한 지점으로 지도 포커스
-    if (typeof setBranchFilter === 'function') {
-        setBranchFilter(branch);
+        // 선택한 지점으로 지도 포커스
+        if (typeof setBranchFilter === 'function') {
+            setBranchFilter(branch);
+        }
+        
+        console.log("startGameMulti 전체 완료");
+    } catch (err) {
+        console.error("startGameMulti 실행 오류:", err);
+        // 사용자 화면에 경고 출력
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:10%;left:5%;width:90%;background:#d35400;color:#fff;padding:20px;z-index:99999;font-size:14px;border-radius:8px;box-shadow:0 10px 20px rgba(0,0,0,0.5);';
+        d.innerHTML = '<strong>❌ 게임 시작 에러 발생:</strong><br>' + err.message + '<br><small>' + err.stack + '</small>';
+        document.body.appendChild(d);
     }
 }
 
