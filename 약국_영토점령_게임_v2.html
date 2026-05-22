@@ -1468,6 +1468,12 @@ function validateSetupForm() {
     const manager = (document.getElementById('setup-manager-input').value || '').trim();
     const btn = document.getElementById('btn-game-start');
     
+    // 실시간으로 선택된 정보의 담당자 이름 업데이트
+    const selManager = document.getElementById('sel-manager-name');
+    if (selManager) {
+        selManager.textContent = manager ? `(${manager})` : '';
+    }
+    
     if (branch && manager) {
         btn.disabled = false;
         btn.style.opacity = '1';
