@@ -4,11 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🏆 약국 영토 점령 게임</title>
+    <!-- 글로벌 런타임 에러 핸들러: 오류 발생 시 화면에 빨간 배너로 표시 -->
+    <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#c0392b;color:#fff;padding:14px 18px;z-index:99999;font-size:13px;line-height:1.6;font-family:sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.5);';
+        d.innerHTML = '<strong>⚠️ JS 오류 감지:</strong> ' + message + '<br><small>파일: ' + source + ' / 줄: ' + lineno + '</small>';
+        if (document.body) document.body.appendChild(d);
+        else document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(d); });
+        return false;
+    };
+    <\/script>
+    <!-- 약국 데이터 파일 (동기 로드 필수: 이후 스크립트가 PHARMACY_DATA를 즉시 사용) -->
+    <script src="pharmacy_data.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
     <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -598,7 +608,6 @@
       import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
       window._fbImports = { initializeApp, getApp, getApps, getDatabase, getAuth, ref, set, onValue, update, get, signInWithEmailAndPassword, signOut, onAuthStateChanged };
     </script>
-<script src="pharmacy_data.js"></script>
 </head>
 <body>
 
@@ -1423,15 +1432,26 @@ function exportData() {
 }
 
 // =================== INIT ===================
-loadState();
-initMap();
-updateLeaderboard();
+// PHARMACY_DATA가 pharmacy_data.js를 통해 이미 동기적으로 로드된 상태이므로
+// window.onload 시점에 안전하게 초기화를 실행합니다.
+window.addEventListener('load', function() {
+    if (typeof PHARMACY_DATA === 'undefined' || !PHARMACY_DATA || PHARMACY_DATA.length === 0) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#c0392b;color:#fff;padding:14px 18px;z-index:99999;font-size:14px;font-family:sans-serif;';
+        d.textContent = '⚠️ PHARMACY_DATA 로드 실패: pharmacy_data.js 파일이 같은 폴더에 있는지 확인하세요.';
+        document.body.appendChild(d);
+        return;
+    }
+    loadState();
+    initMap();
+    updateLeaderboard();
 
-// If already have players, populate setup
-const existingNames = Object.keys(gameState.players);
-if (existingNames.length > 0) {
-    updateExistingPlayers();
-}
+    // If already have players, populate setup
+    const existingNames = Object.keys(gameState.players);
+    if (existingNames.length > 0) {
+        updateExistingPlayers();
+    }
+});
 </script>
 
 <script>
