@@ -607,6 +607,9 @@
       import { getDatabase, ref, set, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js';
       import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
       window._fbImports = { initializeApp, getApp, getApps, getDatabase, getAuth, ref, set, onValue, update, get, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+      
+      // 모듈 로드 완료 이벤트를 발생시켜 일반 스크립트에서 안전하게 사용할 수 있도록 함
+      window.dispatchEvent(new CustomEvent('FirebaseModuleLoaded'));
     </script>
 </head>
 <body>
@@ -1915,7 +1918,11 @@ async function startGameMulti() {
 var _origClaim = null, _origUnclaim = null;
 window.addEventListener('DOMContentLoaded', function() {
     _gameMode = 'online';
-    setTimeout(attachFirebaseAuthWatcher, 400);
+});
+
+// Firebase 모듈 로딩이 보장된 시점에 인증 상태 감시자 등록
+window.addEventListener('FirebaseModuleLoaded', function() {
+    setTimeout(attachFirebaseAuthWatcher, 100);
 });
 
 // claim/unclaim 함수 오버라이드 (지연 실행)
@@ -1948,6 +1955,7 @@ let currentIncTab = 'month';
 /* 지점 포커스 */
 function setBranchFilter(branch) {
     currentBranch = branch;
+    if (typeof PHARMACY_DATA === 'undefined' || !PHARMACY_DATA) return;
     document.querySelectorAll('.branch-chip').forEach(c => {
         const b = c.dataset.branch;
         const isActive = b === branch;
@@ -2157,6 +2165,15 @@ function showSearchResultList(results) {
 }
 
 /* 검색 결과 클릭 시 지도 이동 */
+
+/* 마커 팝업 열기 구현 */
+window.showPopup = function(idx) {
+    const m = pharmacyMarkers[idx];
+    if (m && map) {
+        m.openPopup();
+    }
+};
+
 window.selectSearchResult = function(idx) {
     document.getElementById('search-results').style.display = 'none';
     const p = PHARMACY_DATA[idx];
@@ -2211,12 +2228,14 @@ window.startGame = function() {
     setBranchFilter('all');
 };
 
-// 초기 전체 지도 뷰
-setTimeout(()=>{ 
-    if(map) map.setView([36.5,127.8],7); 
-    // 초기 지점 칩에 약국 수 배지 표시
-    if (typeof setBranchFilter === 'function') setBranchFilter('all');
-}, 500);
+// 초기 전체 지도 뷰 및 칩 설정
+window.addEventListener('load', function() {
+    setTimeout(()=>{ 
+        if(map) map.setView([36.5,127.8],7); 
+        // 초기 지점 칩에 약국 수 배지 표시
+        if (typeof setBranchFilter === 'function') setBranchFilter('all');
+    }, 100);
+});
 
 </script>
 </body>
