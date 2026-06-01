@@ -660,6 +660,7 @@
             <option value="서부영업지점">서부영업지점</option>
             <option value="경북영업지점">경북영업지점</option>
             <option value="경남영업지점">경남영업지점</option>
+            <option value="기타">기타</option>
         </select>
 
         <label style="font-size:14px;color:#ccc;display:block;margin-bottom:8px;font-weight:700;">👤 영업 담당자 이름을 입력하세요</label>
@@ -784,7 +785,7 @@
         <h3>🏢 지점 포커스</h3>
         <div class="chip-row" id="branch-chips">
             <div class="branch-chip active" data-branch="all" onclick="setBranchFilter('all')" style="background:rgba(255,215,0,.35);border-color:#fff;">전체</div>
-            <div class="branch-chip" data-branch="경남영업지점" onclick="setBranchFilter('경남영업지점')">경남영업지점</div><div class="branch-chip" data-branch="경북영업지점" onclick="setBranchFilter('경북영업지점')">경북영업지점</div><div class="branch-chip" data-branch="서부영업지점" onclick="setBranchFilter('서부영업지점')">서부영업지점</div><div class="branch-chip" data-branch="수도권1지점" onclick="setBranchFilter('수도권1지점')">수도권1지점</div><div class="branch-chip" data-branch="수도권2지점" onclick="setBranchFilter('수도권2지점')">수도권2지점</div><div class="branch-chip" data-branch="수도권3지점" onclick="setBranchFilter('수도권3지점')">수도권3지점</div><div class="branch-chip" data-branch="중부영업지점" onclick="setBranchFilter('중부영업지점')">중부영업지점</div>
+            <div class="branch-chip" data-branch="경남영업지점" onclick="setBranchFilter('경남영업지점')">경남영업지점</div><div class="branch-chip" data-branch="경북영업지점" onclick="setBranchFilter('경북영업지점')">경북영업지점</div><div class="branch-chip" data-branch="서부영업지점" onclick="setBranchFilter('서부영업지점')">서부영업지점</div><div class="branch-chip" data-branch="수도권1지점" onclick="setBranchFilter('수도권1지점')">수도권1지점</div><div class="branch-chip" data-branch="수도권2지점" onclick="setBranchFilter('수도권2지점')">수도권2지점</div><div class="branch-chip" data-branch="수도권3지점" onclick="setBranchFilter('수도권3지점')">수도권3지점</div><div class="branch-chip" data-branch="중부영업지점" onclick="setBranchFilter('중부영업지점')">중부영업지점</div><div class="branch-chip" data-branch="기타" onclick="setBranchFilter('기타')">기타</div>
         </div>
     </div>
 
@@ -1191,7 +1192,7 @@ function applyVisibility(idx, m) {
     if (currentViewMode === 'claimed'   && !state) show = false;
     if (currentViewMode === 'unclaimed' &&  state) show = false;
     // 지점/담당자 필터
-    if (typeof currentBranch  !== 'undefined' && currentBranch  !== 'all' && pharm.branch   !== currentBranch)  show = false;
+    if (typeof currentBranch  !== 'undefined' && currentBranch  !== 'all' && currentBranch !== '기타' && pharm.branch   !== currentBranch)  show = false;
     // 수기입력 방식 도입으로 담당자 기반 마커 필터링을 비활성화합니다. (모든 직원이 해당 지점의 전체 약국을 볼 수 있음)
     // if (typeof currentManager !== 'undefined' && currentManager && pharm.manager  !== currentManager) show = false;
 
@@ -1279,11 +1280,11 @@ function updateMyStats() {
     } else {
         // 일반 유저는 본인 지점의 약국 통계 표시
         const myBranch = user.includes('_') ? user.split('_')[0] : user;
-        const myBranchPharmacies = PHARMACY_DATA.filter(p => p.branch === myBranch);
+        const myBranchPharmacies = myBranch === '기타' ? PHARMACY_DATA : PHARMACY_DATA.filter(p => p.branch === myBranch);
         total = myBranchPharmacies.length;
         claimed = Object.entries(gameState.pharmacyStates).filter(([idx, s]) => {
             const p = PHARMACY_DATA[parseInt(idx)];
-            return p && p.branch === myBranch && s.claimed_by;
+            return p && (myBranch === '기타' || p.branch === myBranch) && s.claimed_by;
         }).length;
     }
     
@@ -1483,7 +1484,8 @@ const BRANCH_CONFIG = {
     '중부영업지점': { color: '#98D8C8' },
     '서부영업지점': { color: '#45B7D1' },
     '경북영업지점': { color: '#4ECDC4' },
-    '경남영업지점': { color: '#FF6B6B' }
+    '경남영업지점': { color: '#FF6B6B' },
+    '기타': { color: '#B0B0B0' }
 };
 
 function validateSetupForm() {
@@ -2010,7 +2012,7 @@ setTimeout(function() {
 <script>
 
 // ──────── 개선 기능 JS ────────
-const BRANCH_FOCUS = {"수도권1지점": [37.56, 127.00, 11], "수도권2지점": [37.45, 126.90, 11], "수도권3지점": [37.65, 127.05, 11], "중부영업지점": [36.8, 127.15, 10], "서부영업지점": [35.15, 126.90, 11], "경북영업지점": [36.0, 128.6, 10], "경남영업지점": [35.18, 129.13, 11]};
+const BRANCH_FOCUS = {"수도권1지점": [37.56, 127.00, 11], "수도권2지점": [37.45, 126.90, 11], "수도권3지점": [37.65, 127.05, 11], "중부영업지점": [36.8, 127.15, 10], "서부영업지점": [35.15, 126.90, 11], "경북영업지점": [36.0, 128.6, 10], "경남영업지점": [35.18, 129.13, 11], "기타": [36.5, 127.8, 7]};
 let currentBranch = 'all';
 let currentManager = '';
 let currentIncTab = 'month';
@@ -2024,7 +2026,7 @@ function setBranchFilter(branch) {
         const isActive = b === branch;
         c.classList.toggle('active', isActive);
         // 약국 수 배지 표시
-        const count = b === 'all' 
+        const count = b === 'all' || b === '기타'
             ? PHARMACY_DATA.length 
             : PHARMACY_DATA.filter(p => p.branch === b).length;
         const baseName = b === 'all' ? '전체' : b;
@@ -2185,7 +2187,7 @@ window.searchPharmacy = function() {
     
     // 현재 필터 상태 반영하여 검색 대상 범위 결정
     const candidates = PHARMACY_DATA.map((p, idx) => ({p, idx})).filter(({p}) => {
-        if (currentBranch !== 'all' && p.branch !== currentBranch) return false;
+        if (currentBranch !== 'all' && currentBranch !== '기타' && p.branch !== currentBranch) return false;
         if (currentManager && p.manager !== currentManager) return false;
         return true;
     });
@@ -2262,7 +2264,7 @@ window.showSearchSuggestions = function() {
     
     // 현재 필터 범위 내에서 검색
     const candidates = PHARMACY_DATA.map((p, idx) => ({p, idx})).filter(({p}) => {
-        if (currentBranch !== 'all' && p.branch !== currentBranch) return false;
+        if (currentBranch !== 'all' && currentBranch !== '기타' && p.branch !== currentBranch) return false;
         if (currentManager && p.manager !== currentManager) return false;
         return true;
     });
