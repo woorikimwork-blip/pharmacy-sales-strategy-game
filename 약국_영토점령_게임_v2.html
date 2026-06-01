@@ -598,163 +598,333 @@
         }
         table.master-table td { padding: 7px 10px; border-top: 1px solid #333; color: #ddd; }
 
-        /* ========== Readability refresh ========== */
+        /* ========== Mobile-first field UX refresh ========== */
         :root {
-            --surface: rgba(16, 18, 38, 0.96);
-            --surface-2: rgba(255,255,255,0.075);
-            --line: rgba(255,255,255,0.12);
-            --accent: #e94560;
-            --text-muted: #aeb6c8;
+            --surface: rgba(17, 22, 36, 0.97);
+            --surface-strong: #111827;
+            --surface-soft: rgba(255,255,255,0.08);
+            --line: rgba(255,255,255,0.14);
+            --accent: #f43f5e;
+            --accent-2: #38bdf8;
+            --ok: #22c55e;
+            --text-muted: #b8c2d6;
         }
-        body { background: #0b1020; }
+        body {
+            background: #0b1020;
+            color: #f8fafc;
+        }
         #topbar {
-            min-height: 60px;
-            background: rgba(18, 31, 57, 0.96);
-            border-bottom: 1px solid rgba(233,69,96,0.9);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+            min-height: 64px;
+            background: rgba(15, 23, 42, 0.97);
+            border-bottom: 1px solid rgba(244,63,94,0.82);
+            box-shadow: 0 10px 32px rgba(0,0,0,0.28);
         }
-        #topbar h1 { letter-spacing: 0; }
+        #topbar h1 {
+            letter-spacing: 0;
+            font-size: 19px;
+            line-height: 1.15;
+        }
         #topbar button,
         #my-score-badge,
         #current-player-badge {
-            min-height: 34px;
+            min-height: 38px;
+            border-radius: 999px !important;
+            font-weight: 800;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
         }
         #side-panel {
-            width: 370px;
-            top: 60px;
-            max-height: calc(100vh - 60px);
+            width: 390px;
+            top: 64px;
+            max-height: calc(100vh - 64px);
             background: var(--surface);
-            border-left: 1px solid rgba(233,69,96,0.8);
-            box-shadow: -16px 0 40px rgba(0,0,0,0.35);
+            border-left: 1px solid rgba(244,63,94,0.72);
+            box-shadow: -18px 0 42px rgba(0,0,0,0.38);
         }
-        #panel-toggle.open { right: 370px; }
+        #panel-toggle.open { right: 390px; }
         #panel-toggle {
-            top: 78px;
+            top: 82px;
             background: var(--accent);
             font-weight: 900;
-            min-width: 44px;
-            min-height: 44px;
+            min-width: 48px;
+            min-height: 48px;
+            box-shadow: 0 10px 28px rgba(244,63,94,0.35);
         }
         .panel-section {
-            padding: 18px 20px;
+            padding: 20px 22px;
             border-bottom: 1px solid var(--line);
         }
         .panel-section h3 {
-            color: #ff5f79;
-            font-size: 15px;
+            color: #fb7185;
+            font-size: 16px;
             letter-spacing: 0;
             text-transform: none;
             margin-bottom: 12px;
         }
-        .stat-row, .inc-row, .rank-row { font-size: 14px; }
-        .stat-row { padding: 7px 0; }
+        .stat-row, .inc-row, .rank-row {
+            font-size: 14px;
+            line-height: 1.45;
+        }
+        .stat-row { padding: 8px 0; }
         .chip, .branch-chip {
             border-radius: 999px;
-            padding: 7px 12px;
+            padding: 8px 13px;
             font-size: 12px;
             line-height: 1.15;
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .chip:hover, .branch-chip:hover { transform: translateY(-1px); }
         .my-input, .my-select, #search-input {
-            min-height: 44px;
-            border-radius: 8px !important;
+            min-height: 48px;
+            border-radius: 12px !important;
+            font-size: 16px !important;
         }
         .setup-box {
+            border-radius: 20px;
+            border-width: 1px;
+            box-shadow: 0 28px 90px rgba(0,0,0,0.55);
+        }
+        .btn-start {
+            min-height: 54px;
             border-radius: 14px;
-            box-shadow: 0 24px 80px rgba(0,0,0,0.48);
         }
         .claim-popup {
-            border-radius: 8px;
-            min-width: 260px;
+            border-radius: 14px;
+            min-width: 285px;
+            padding: 18px;
+        }
+        .claim-popup .pharmacy-name {
+            font-size: 17px;
+            line-height: 1.35;
+        }
+        .claim-popup .pharmacy-meta {
+            font-size: 12px;
+            line-height: 1.55;
+        }
+        .claim-btn,
+        .trade-btn {
+            min-height: 46px;
+            border-radius: 12px;
         }
         .leaflet-control-zoom a {
-            width: 36px !important;
-            height: 36px !important;
-            line-height: 34px !important;
+            width: 40px !important;
+            height: 40px !important;
+            line-height: 38px !important;
             font-size: 22px !important;
         }
         #toast {
             bottom: 24px;
-            border-radius: 10px;
+            border-radius: 999px;
             box-shadow: 0 12px 32px rgba(0,0,0,0.32);
         }
 
         @media (max-width: 768px) {
             body { overflow: hidden; }
             #topbar {
-                min-height: 58px;
-                padding: 8px 10px;
+                min-height: 64px;
+                padding: 8px 10px 10px;
                 gap: 8px;
                 align-content: center;
                 flex-wrap: wrap;
+                border-bottom-width: 1px;
             }
             #topbar h1 {
-                flex: 1 1 168px;
-                font-size: 15px !important;
+                flex: 1 1 155px;
+                font-size: 16px !important;
                 line-height: 1.2;
             }
-            #topbar > div:nth-child(2) { font-size: 11px !important; }
+            #topbar > div:nth-child(2) {
+                order: 5;
+                width: 100%;
+                font-size: 11px !important;
+                color: var(--text-muted) !important;
+            }
             #topbar .spacer { display: none; }
             #topbar > div:last-child {
                 width: 100%;
-                justify-content: flex-end;
-                flex-wrap: wrap;
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px !important;
             }
             #topbar button,
             #my-score-badge,
             #current-player-badge {
-                min-height: 36px;
-                padding: 6px 10px !important;
+                min-height: 42px;
+                padding: 8px 10px !important;
                 font-size: 12px !important;
+                justify-content: center;
+                text-align: center;
+            }
+            #current-player-badge {
+                max-width: 100%;
+                overflow: hidden;
+            }
+            #cur-name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             .setup-box {
-                width: min(480px, calc(100vw - 28px));
-                max-height: calc(100svh - 28px);
+                width: calc(100vw - 24px) !important;
+                max-width: 420px;
+                max-height: calc(100svh - 24px);
                 overflow-y: auto;
-                padding: 26px 22px;
+                padding: 28px 20px 22px !important;
+                border-radius: 22px;
+                background: linear-gradient(180deg, #172033 0%, #111827 100%);
             }
-            .btn-start { min-height: 52px; }
+            .setup-box h2 {
+                font-size: 21px !important;
+                line-height: 1.2;
+                margin-bottom: 10px;
+            }
+            .setup-box p.subtitle {
+                font-size: 13px;
+                line-height: 1.45;
+                margin-bottom: 22px;
+            }
+            .btn-start { min-height: 56px !important; font-size: 16px !important; }
             #side-panel {
-                max-height: 74vh;
-                max-height: 74svh;
-                border-radius: 18px 18px 0 0;
-                box-shadow: 0 -18px 48px rgba(0,0,0,0.42);
+                top: auto !important;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100% !important;
+                max-height: 82vh;
+                max-height: 82svh;
+                border-left: none !important;
+                border-top: 1px solid rgba(244,63,94,0.75);
+                border-radius: 22px 22px 0 0;
+                box-shadow: 0 -22px 56px rgba(0,0,0,0.52);
+                padding-top: 8px;
+                transform: translateY(0) !important;
+                transition: transform 0.28s ease;
             }
-            #side-panel.hidden { transform: translateY(calc(100% - 68px)) !important; }
+            #side-panel::before {
+                content: "";
+                width: 44px;
+                height: 5px;
+                border-radius: 999px;
+                background: rgba(255,255,255,0.35);
+                margin: 2px auto 4px;
+                flex: 0 0 auto;
+            }
+            #side-panel.hidden {
+                transform: translateY(calc(100% - 76px)) !important;
+            }
             #panel-toggle {
-                bottom: 0 !important;
-                min-width: 124px;
-                min-height: 42px;
-                padding: 8px 16px !important;
-                border-radius: 14px 14px 0 0 !important;
-                font-size: 13px !important;
+                top: auto !important;
+                right: 14px !important;
+                bottom: 14px !important;
+                transform: none !important;
+                min-width: 132px;
+                min-height: 48px;
+                padding: 10px 16px !important;
+                border-radius: 999px !important;
+                font-size: 14px !important;
+                z-index: 1200;
             }
             #panel-toggle.open {
-                bottom: 74vh !important;
-                bottom: 74svh !important;
+                right: 14px !important;
+                bottom: calc(82vh - 58px) !important;
+                bottom: calc(82svh - 58px) !important;
             }
-            .panel-section { padding: 16px 18px; }
-            .panel-section h3 { font-size: 15px; }
+            .panel-section {
+                padding: 18px 18px;
+            }
+            .panel-section h3 {
+                font-size: 16px;
+                margin-bottom: 14px;
+            }
+            #side-panel .panel-section:nth-child(2) {
+                position: sticky;
+                top: 0;
+                z-index: 3;
+                background: rgba(17, 22, 36, 0.98);
+                backdrop-filter: blur(14px);
+            }
+            #side-panel .panel-section:nth-child(2) > div {
+                gap: 10px !important;
+            }
+            #search-input {
+                min-height: 52px !important;
+                padding: 12px 14px !important;
+                border-radius: 14px !important;
+                border-color: rgba(255,255,255,0.2) !important;
+            }
+            #search-input + button {
+                min-width: 72px;
+                border-radius: 14px !important;
+                font-size: 15px !important;
+            }
+            #search-results {
+                max-height: 34vh !important;
+                margin-top: 10px !important;
+            }
             .chip-row {
                 flex-wrap: nowrap;
                 overflow-x: auto;
-                padding-bottom: 4px;
+                gap: 8px;
+                padding-bottom: 8px;
                 -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .chip-row::-webkit-scrollbar {
+                display: none;
             }
             .chip, .branch-chip {
                 flex: 0 0 auto;
-                min-height: 38px;
+                min-height: 44px;
                 display: inline-flex;
                 align-items: center;
+                padding: 10px 14px !important;
+                font-size: 13px !important;
             }
             .scroll-area {
                 max-height: none;
                 min-height: 120px;
             }
-            #search-input { font-size: 16px !important; }
-            #map { margin-bottom: 42px; }
+            #map { margin-bottom: 76px; }
             .leaflet-bottom.leaflet-left,
-            .leaflet-bottom.leaflet-right { margin-bottom: 54px; }
+            .leaflet-bottom.leaflet-right { margin-bottom: 86px; }
+            .leaflet-control-zoom {
+                margin-left: 10px !important;
+                margin-top: 74px !important;
+            }
+            .leaflet-popup-content-wrapper {
+                max-width: calc(100vw - 28px) !important;
+                border-radius: 18px !important;
+            }
+            .leaflet-popup-content {
+                width: min(330px, calc(100vw - 40px)) !important;
+            }
+            .claim-popup {
+                min-width: 0 !important;
+                width: 100%;
+                padding: 18px;
+            }
+            .claim-popup .pharmacy-name {
+                font-size: 18px;
+            }
+            .claim-btn,
+            .trade-btn {
+                min-height: 50px !important;
+                font-size: 15px !important;
+            }
+            #toast {
+                left: 12px;
+                right: 12px;
+                bottom: 82px;
+                transform: translateY(90px);
+                width: auto;
+                max-width: none;
+                text-align: center;
+                white-space: normal;
+                border-radius: 16px;
+            }
+            #toast.show { transform: translateY(0); }
         }
 
     </style>
@@ -879,7 +1049,7 @@
 <div id="current-room-display" style="display:none;"><strong id="setup-room-code"></strong></div>
 
 <!-- SIDE PANEL TOGGLE -->
-<button id="panel-toggle" class="open" onclick="togglePanel()">필터 닫기</button>
+<button id="panel-toggle" class="open" onclick="togglePanel()">검색/필터 닫기</button>
 
 <!-- SIDE PANEL -->
 <div id="side-panel">
@@ -1549,11 +1719,17 @@ function showToast(msg) {
 
 // =================== PANEL ===================
 function togglePanel() {
-    panelOpen = !panelOpen;
+    setPanelOpen(!panelOpen);
+}
+
+function setPanelOpen(open) {
+    panelOpen = open;
     const panel = document.getElementById('side-panel');
     const btn = document.getElementById('panel-toggle');
+    if (!panel || !btn) return;
     panel.classList.toggle('hidden', !panelOpen);
-    btn.textContent = panelOpen ? '필터 닫기' : '필터 열기';
+    panel.classList.toggle('open', panelOpen);
+    btn.textContent = panelOpen ? '검색/필터 닫기' : '검색/필터 열기';
     btn.classList.toggle('open', panelOpen);
 }
 
@@ -2123,6 +2299,9 @@ async function startGameMulti() {
         if (typeof setBranchFilter === 'function') {
             setBranchFilter(branch);
         }
+        if (window.innerWidth <= 768 && typeof setPanelOpen === 'function') {
+            setPanelOpen(false);
+        }
         
         console.log("startGameMulti 전체 완료");
     } catch (err) {
@@ -2414,8 +2593,8 @@ window.selectSearchResult = function(idx) {
     document.getElementById('search-results').style.display = 'none';
     const p = PHARMACY_DATA[idx];
     if (p.lat && p.lng && map) {
-        if (window.innerWidth <= 768 && document.getElementById('side-panel').classList.contains('open')) {
-            togglePanel();
+        if (window.innerWidth <= 768 && panelOpen && typeof setPanelOpen === 'function') {
+            setPanelOpen(false);
         }
         map.flyTo([p.lat, p.lng], 16, {duration: 1.2});
         setTimeout(() => {
