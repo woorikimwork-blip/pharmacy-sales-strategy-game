@@ -598,6 +598,165 @@
         }
         table.master-table td { padding: 7px 10px; border-top: 1px solid #333; color: #ddd; }
 
+        /* ========== Readability refresh ========== */
+        :root {
+            --surface: rgba(16, 18, 38, 0.96);
+            --surface-2: rgba(255,255,255,0.075);
+            --line: rgba(255,255,255,0.12);
+            --accent: #e94560;
+            --text-muted: #aeb6c8;
+        }
+        body { background: #0b1020; }
+        #topbar {
+            min-height: 60px;
+            background: rgba(18, 31, 57, 0.96);
+            border-bottom: 1px solid rgba(233,69,96,0.9);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+        }
+        #topbar h1 { letter-spacing: 0; }
+        #topbar button,
+        #my-score-badge,
+        #current-player-badge {
+            min-height: 34px;
+        }
+        #side-panel {
+            width: 370px;
+            top: 60px;
+            max-height: calc(100vh - 60px);
+            background: var(--surface);
+            border-left: 1px solid rgba(233,69,96,0.8);
+            box-shadow: -16px 0 40px rgba(0,0,0,0.35);
+        }
+        #panel-toggle.open { right: 370px; }
+        #panel-toggle {
+            top: 78px;
+            background: var(--accent);
+            font-weight: 900;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        .panel-section {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--line);
+        }
+        .panel-section h3 {
+            color: #ff5f79;
+            font-size: 15px;
+            letter-spacing: 0;
+            text-transform: none;
+            margin-bottom: 12px;
+        }
+        .stat-row, .inc-row, .rank-row { font-size: 14px; }
+        .stat-row { padding: 7px 0; }
+        .chip, .branch-chip {
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 12px;
+            line-height: 1.15;
+        }
+        .chip:hover, .branch-chip:hover { transform: translateY(-1px); }
+        .my-input, .my-select, #search-input {
+            min-height: 44px;
+            border-radius: 8px !important;
+        }
+        .setup-box {
+            border-radius: 14px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.48);
+        }
+        .claim-popup {
+            border-radius: 8px;
+            min-width: 260px;
+        }
+        .leaflet-control-zoom a {
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 34px !important;
+            font-size: 22px !important;
+        }
+        #toast {
+            bottom: 24px;
+            border-radius: 10px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.32);
+        }
+
+        @media (max-width: 768px) {
+            body { overflow: hidden; }
+            #topbar {
+                min-height: 58px;
+                padding: 8px 10px;
+                gap: 8px;
+                align-content: center;
+                flex-wrap: wrap;
+            }
+            #topbar h1 {
+                flex: 1 1 168px;
+                font-size: 15px !important;
+                line-height: 1.2;
+            }
+            #topbar > div:nth-child(2) { font-size: 11px !important; }
+            #topbar .spacer { display: none; }
+            #topbar > div:last-child {
+                width: 100%;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+            }
+            #topbar button,
+            #my-score-badge,
+            #current-player-badge {
+                min-height: 36px;
+                padding: 6px 10px !important;
+                font-size: 12px !important;
+            }
+            .setup-box {
+                width: min(480px, calc(100vw - 28px));
+                max-height: calc(100svh - 28px);
+                overflow-y: auto;
+                padding: 26px 22px;
+            }
+            .btn-start { min-height: 52px; }
+            #side-panel {
+                max-height: 74vh;
+                max-height: 74svh;
+                border-radius: 18px 18px 0 0;
+                box-shadow: 0 -18px 48px rgba(0,0,0,0.42);
+            }
+            #side-panel.hidden { transform: translateY(calc(100% - 68px)) !important; }
+            #panel-toggle {
+                bottom: 0 !important;
+                min-width: 124px;
+                min-height: 42px;
+                padding: 8px 16px !important;
+                border-radius: 14px 14px 0 0 !important;
+                font-size: 13px !important;
+            }
+            #panel-toggle.open {
+                bottom: 74vh !important;
+                bottom: 74svh !important;
+            }
+            .panel-section { padding: 16px 18px; }
+            .panel-section h3 { font-size: 15px; }
+            .chip-row {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .chip, .branch-chip {
+                flex: 0 0 auto;
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+            }
+            .scroll-area {
+                max-height: none;
+                min-height: 120px;
+            }
+            #search-input { font-size: 16px !important; }
+            #map { margin-bottom: 42px; }
+            .leaflet-bottom.leaflet-left,
+            .leaflet-bottom.leaflet-right { margin-bottom: 54px; }
+        }
+
     </style>
 
 
@@ -720,7 +879,7 @@
 <div id="current-room-display" style="display:none;"><strong id="setup-room-code"></strong></div>
 
 <!-- SIDE PANEL TOGGLE -->
-<button id="panel-toggle" class="open" onclick="togglePanel()">◀</button>
+<button id="panel-toggle" class="open" onclick="togglePanel()">필터 닫기</button>
 
 <!-- SIDE PANEL -->
 <div id="side-panel">
@@ -1394,7 +1553,7 @@ function togglePanel() {
     const panel = document.getElementById('side-panel');
     const btn = document.getElementById('panel-toggle');
     panel.classList.toggle('hidden', !panelOpen);
-    btn.textContent = panelOpen ? '▶' : '◀';
+    btn.textContent = panelOpen ? '필터 닫기' : '필터 열기';
     btn.classList.toggle('open', panelOpen);
 }
 
