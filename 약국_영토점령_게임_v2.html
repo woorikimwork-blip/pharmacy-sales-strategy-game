@@ -14,7 +14,7 @@
         else document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(d); });
         return false;
     };
-    <\/script>
+    </script>
     <!-- 약국 데이터 파일 (동기 로드 필수: 이후 스크립트가 PHARMACY_DATA를 즉시 사용) -->
     <script src="pharmacy_data.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
@@ -1332,14 +1332,14 @@ function updateMyStats() {
                   }).length;
             const totalMarket = PHARMACY_DATA.filter(p => p.market_type === m.key).length;
             const mPct = totalMarket > 0 ? (cnt / totalMarket * 100).toFixed(1) : '0.0';
-            return \`<div style="margin-bottom:3px;">
+            return `<div style="margin-bottom:3px;">
                 <div style="display:flex;justify-content:space-between;font-size:10px;color:#bbb;margin-bottom:2px;">
-                    <span>\${m.label}</span><span style="color:\${m.color};">\${cnt}개 (\${mPct}%)</span>
+                    <span>${m.label}</span><span style="color:${m.color};">${cnt}개 (${mPct}%)</span>
                 </div>
                 <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;">
-                    <div style="height:100%;width:\${mPct}%;background:\${m.color};border-radius:2px;transition:width .5s;"></div>
+                    <div style="height:100%;width:${mPct}%;background:${m.color};border-radius:2px;transition:width .5s;"></div>
                 </div>
-            </div>\`;
+            </div>`;
         }).join('');
     }
 }
