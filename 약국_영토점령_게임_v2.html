@@ -638,6 +638,9 @@
         <button type="button" id="btn-master-dash-toggle" onclick="toggleMasterDashboard()" style="display:none;background:rgba(155,89,182,0.25);color:#e8daef;border:1px solid #9b59b6;border-radius:10px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;">
             📋 관리 대시보드
         </button>
+        <button type="button" id="btn-master-logout" onclick="masterAdminLogout()" style="display:none;background:rgba(233,69,96,0.22);color:#fff;border:1px solid #e94560;border-radius:10px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;">
+            사용자 전환
+        </button>
     </div>
 </div>
 
@@ -1719,8 +1722,10 @@ function toggleMasterLoginForm() {
 function updateMasterChrome() {
     var banner = document.getElementById('master-admin-banner');
     var dashBtn = document.getElementById('btn-master-dash-toggle');
+    var logoutBtn = document.getElementById('btn-master-logout');
     if (banner) banner.classList.toggle('active', !!window._isMasterAdmin);
     if (dashBtn) dashBtn.style.display = window._isMasterAdmin ? 'inline-block' : 'none';
+    if (logoutBtn) logoutBtn.style.display = window._isMasterAdmin ? 'inline-block' : 'none';
 }
 
 function toggleMasterDashboard() {
@@ -1866,12 +1871,19 @@ async function masterAdminLogout() {
     try {
         if (imp && _auth) await imp.signOut(_auth);
     } catch(e) {}
+    if (typeof _fbUnsubPharmacies === 'function') { _fbUnsubPharmacies(); _fbUnsubPharmacies = null; }
+    if (typeof _fbUnsubPlayers === 'function') { _fbUnsubPlayers(); _fbUnsubPlayers = null; }
     window._isMasterAdmin = false;
+    gameState.currentPlayer = null;
+    saveState();
     var dash = document.getElementById('master-dashboard');
     if (dash) dash.classList.remove('open');
+    document.getElementById('current-player-badge').style.display = 'none';
+    document.getElementById('my-score-badge').style.display = 'none';
+    document.getElementById('my-status-section').style.display = 'none';
     updateMasterChrome();
     showSetup();
-    showToast('관리자에서 로그아웃했습니다');
+    showToast('관리자 모드에서 나왔습니다. 다시 입장할 수 있습니다.');
 }
 
 function attachFirebaseAuthWatcher() {
