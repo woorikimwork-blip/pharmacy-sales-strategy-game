@@ -1664,6 +1664,12 @@ function startFirebaseListener() {
             if (typeof updateIncentive === 'function') updateIncentive();
             if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
         }
+    }, function(err) {
+        if (isFirebasePermissionError(err)) {
+            enterLocalSyncFallback(err);
+        } else {
+            console.error("Firebase listener error:", err);
+        }
     });
 
     var plRef = imp.ref(_db, 'rooms/' + _roomId + '/players');
@@ -1677,6 +1683,12 @@ function startFirebaseListener() {
         });
         updateLeaderboard();
         if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
+    }, function(err) {
+        if (isFirebasePermissionError(err)) {
+            enterLocalSyncFallback(err);
+        } else {
+            console.error("Firebase players listener error:", err);
+        }
     });
 }
 
@@ -1905,24 +1917,33 @@ async function startGameMulti() {
         console.log("Firebase 초기화 시도");
         var ok = await initFirebase();
         if (ok) {
-            console.log("Firebase 초기화 성공, 데이터 동기화 시작");
-            const imp = window._fbImports;
-            const myColor = BRANCH_CONFIG[branch].color;
-            await imp.update(imp.ref(_db), {
-                ['rooms/' + _roomId + '/players/' + _currentName]: {
-                    color: myColor,
-                    branch: branch,
-                    joined_at: Date.now()
-                }
-            });
+            try {
+                console.log("Firebase 초기화 성공, 데이터 동기화 시작");
+                const imp = window._fbImports;
+                const myColor = BRANCH_CONFIG[branch].color;
+                await imp.update(imp.ref(_db), {
+                    ['rooms/' + _roomId + '/players/' + _currentName]: {
+                        color: myColor,
+                        branch: branch,
+                        joined_at: Date.now()
+                    }
+                });
 
-            await loadFromFirebase();
-            refreshAllMarkers();
-            updateLeaderboard(); 
-            if(typeof updateIncentive === 'function') updateIncentive();
-            startFirebaseListener();
+                await loadFromFirebase();
+                refreshAllMarkers();
+                updateLeaderboard(); 
+                if(typeof updateIncentive === 'function') updateIncentive();
+                startFirebaseListener();
+            } catch (syncErr) {
+                if (isFirebasePermissionError(syncErr)) {
+                    enterLocalSyncFallback(syncErr);
+                } else {
+                    throw syncErr;
+                }
+            }
         } else {
             console.warn("Firebase 초기화 실패, 오프라인 모드 진행");
+            _gameMode = 'local';
         }
 
         // 선택한 지점으로 지도 포커스
@@ -1953,6 +1974,21 @@ window.addEventListener('FirebaseModuleLoaded', function() {
 });
 
 // claim/unclaim 함수 오버라이드 (지연 실행)
+function isFirebasePermissionError(err) {
+    var text = String((err && (err.code || err.message)) || err || '');
+    return /PERMISSION_DENIED|permission[_ -]?denied/i.test(text);
+}
+
+function enterLocalSyncFallback(err) {
+    console.warn("Firebase permission denied; continuing in local mode.", err);
+    _gameMode = 'local';
+    if (typeof setSyncStatus === 'function') setSyncStatus(false, 'local mode');
+    if (!window._localSyncFallbackShown && typeof showToast === 'function') {
+        window._localSyncFallbackShown = true;
+        showToast('온라인 동기화 권한이 없어 로컬 모드로 진행합니다.');
+    }
+}
+
 setTimeout(function() {
     if (typeof claimPharmacy !== 'undefined') {
         var _origC = claimPharmacy;
