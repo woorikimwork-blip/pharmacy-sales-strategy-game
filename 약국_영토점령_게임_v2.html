@@ -1098,6 +1098,7 @@
             <div class="chip" data-filter="유동인구" onclick="setFilter('유동인구')" style="background:rgba(74,171,219,0.2);color:#4AABDB;border-color:#4AABDB;">🚶 유동인구</div>
             <div class="chip" data-filter="성형·피부과" onclick="setFilter('성형·피부과')" style="background:rgba(142,61,255,0.2);color:#8E3DFF;border-color:#8E3DFF;">💉 성형·피부과</div>
             <div class="chip" data-filter="주거" onclick="setFilter('주거')" style="background:rgba(76,175,80,0.2);color:#4CAF50;border-color:#4CAF50;">🏡 주거</div>
+            <div class="chip" data-filter="priority" onclick="setFilter('priority')" style="background:rgba(255,209,102,0.18);color:#FFD166;border-color:#FFD166;">⭐ 우선 선점</div>
         </div>
     </div>
 
@@ -1108,6 +1109,7 @@
             <div class="chip active" data-mode="all" onclick="setViewMode('all')" style="background:#444;color:#fff;">전체</div>
             <div class="chip" data-mode="claimed" onclick="setViewMode('claimed')" style="background:rgba(50,205,50,0.15);color:#90EE90;border-color:#4CAF50;">✅ 점령됨</div>
             <div class="chip" data-mode="unclaimed" onclick="setViewMode('unclaimed')" style="background:rgba(255,255,255,0.05);color:#aaa;border-color:#555;">⬜ 미점령</div>
+            <div class="chip" data-mode="unavailable" onclick="setViewMode('unavailable')" style="background:rgba(156,163,175,0.18);color:#CBD5E1;border-color:#9CA3AF;">🚫 점령불가</div>
         </div>
     </div>
 
@@ -1220,7 +1222,7 @@ function updateExistingPlayers() {
         area.style.display = 'block';
         list.innerHTML = names.map(name => {
             const p = gameState.players[name];
-            const count = Object.values(gameState.pharmacyStates).filter(s => s.claimed_by === name).length;
+            const count = getClaimedStateEntries().filter(([, s]) => s.claimed_by === name).length;
             return `<div onclick="selectExistingPlayer('${name}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.05);cursor:pointer;margin-bottom:6px;border:1.5px solid transparent;transition:all 0.2s;" 
                 onmouseover="this.style.borderColor='#e94560'" onmouseout="this.style.borderColor='transparent'">
                 <div style="width:14px;height:14px;border-radius:50%;background:${p.color};"></div>
@@ -1341,11 +1343,14 @@ function initMap() {
             pharmacyMarkers.push(null);
             return;
         }
-        const state = gameState.pharmacyStates[idx];
-        const color = state ? state.color : getBaseColor(pharm.market_type);
-        const opacity = state ? 0.95 : 0.65;
-        const radius = state ? 9 : 6;
-        const weight = state ? 3 : 1.5;
+        const state = getStateByIndex(idx);
+        const claimed = isClaimedState(state);
+        const unavailable = isUnavailableState(state);
+        const baseColor = getBaseColor(pharm.market_type);
+        const color = unavailable ? '#9CA3AF' : claimed ? state.color : (pharm.priority_target ? '#FFD166' : baseColor);
+        const opacity = unavailable ? 0.45 : claimed ? 0.95 : (pharm.priority_target ? 0.9 : 0.65);
+        const radius = unavailable ? 7 : claimed ? 9 : (pharm.priority_target ? 10 : 6);
+        const weight = unavailable ? 3 : claimed ? 3 : (pharm.priority_target ? 4 : 1.5);
 
         const marker = L.circleMarker([pharm.lat, pharm.lng], {
             color: color,
@@ -1372,10 +1377,92 @@ function getBaseColor(market_type) {
     return '#aaa';
 }
 
+function getPharmacyKey(idx) {
+    const p = PHARMACY_DATA[idx];
+    return p && p.pharmacyId ? p.pharmacyId : String(idx);
+}
+
+function getPharmacyIndexByKey(key) {
+    const direct = PHARMACY_DATA.findIndex(p => p && p.pharmacyId === key);
+    if (direct >= 0) return direct;
+    const legacy = parseInt(key, 10);
+    return Number.isInteger(legacy) && PHARMACY_DATA[legacy] ? legacy : -1;
+}
+
+function getPharmacyByStateKey(key) {
+    const idx = getPharmacyIndexByKey(key);
+    return idx >= 0 ? PHARMACY_DATA[idx] : null;
+}
+
+function getStateByIndex(idx) {
+    const key = getPharmacyKey(idx);
+    return gameState.pharmacyStates[key] || gameState.pharmacyStates[String(idx)] || null;
+}
+
+function setStateByIndex(idx, state) {
+    const key = getPharmacyKey(idx);
+    delete gameState.pharmacyStates[String(idx)];
+    gameState.pharmacyStates[key] = state;
+}
+
+function deleteStateByIndex(idx) {
+    delete gameState.pharmacyStates[getPharmacyKey(idx)];
+    delete gameState.pharmacyStates[String(idx)];
+}
+
+function isClaimedState(state) {
+    return !!(state && state.status !== 'unavailable' && state.claimed_by);
+}
+
+function isUnavailableState(state) {
+    return !!(state && state.status === 'unavailable');
+}
+
+function getClaimedStateEntries() {
+    return Object.entries(gameState.pharmacyStates || {}).filter(([, s]) => isClaimedState(s));
+}
+
+function getUnavailableStateEntries() {
+    return Object.entries(gameState.pharmacyStates || {}).filter(([, s]) => isUnavailableState(s));
+}
+
+function normalizePharmacyStates(states) {
+    const normalized = {};
+    Object.entries(states || {}).forEach(([key, state]) => {
+        const idx = getPharmacyIndexByKey(key);
+        if (idx < 0 || !state) return;
+        const normalizedKey = getPharmacyKey(idx);
+        if (isUnavailableState(state)) {
+            normalized[normalizedKey] = {
+                status: 'unavailable',
+                unavailable_reason: String(state.unavailable_reason || '').slice(0, 10),
+                updated_by: state.updated_by || state.claimed_by || '',
+                updated_at: state.updated_at || state.claimed_at || new Date().toISOString()
+            };
+        } else if (state.claimed_by) {
+            normalized[normalizedKey] = {
+                status: 'claimed',
+                claimed_by: state.claimed_by,
+                color: state.color || '#aaa',
+                claimed_at: state.claimed_at || new Date().toISOString()
+            };
+        }
+    });
+    return normalized;
+}
+
+function getPriorityBadge(pharm) {
+    if (!pharm || !pharm.priority_target) return '';
+    const rank = pharm.priority_rank ? ' #' + pharm.priority_rank : '';
+    const region = pharm.priority_region ? ' · ' + pharm.priority_region : '';
+    return `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,209,102,0.18);color:#FFD166;border:1px solid rgba(255,209,102,0.45);font-weight:800;">⭐ 우선 선점${rank}${region}</span>`;
+}
+
 function buildPopup(idx) {
     const pharm = PHARMACY_DATA[idx];
-    const state = gameState.pharmacyStates[idx];
-    const isClaimed = !!state;
+    const state = getStateByIndex(idx);
+    const isClaimed = isClaimedState(state);
+    const isUnavailable = isUnavailableState(state);
     const isMineClaimed = isClaimed && state.claimed_by === gameState.currentPlayer;
     const isLoggedIn = !!gameState.currentPlayer;
 
@@ -1385,18 +1472,25 @@ function buildPopup(idx) {
             <div style="font-weight:700;color:${state.color};">${formatPlayerName(state.claimed_by)}</div>
             <div style="font-size:10px;color:#888;">${new Date(state.claimed_at).toLocaleDateString('ko-KR')}</div>
            </div>`
+        : isUnavailable
+        ? `<div class="claim-status unclaimed" style="border-color:#9CA3AF;color:#CBD5E1;">
+            🚫 점령불가<br><span style="font-size:11px;color:#aaa;">사유: ${state.unavailable_reason || '-'}</span>
+           </div>`
         : `<div class="claim-status unclaimed">⬜ 미점령 구역</div>`;
 
     let btnHTML = '';
     if (window._isMasterAdmin) {
-        if (isClaimed) {
-            btnHTML = `<button class="claim-btn claim-btn-secondary" onclick="masterAdminUnclaim(${idx})" style="border-color:#9b59b6;">🛡️ 관리자: 점령 해제</button>`;
+        if (isClaimed || isUnavailable) {
+            btnHTML = `<button class="claim-btn claim-btn-secondary" onclick="masterAdminUnclaim(${idx})" style="border-color:#9b59b6;">🛡️ 관리자: 상태 해제</button>`;
         } else {
             btnHTML = `<div style="font-size:11px;color:#888;padding:8px 0;">관리자 보기 모드 · 점령은 지점 모드에서 진행</div>`;
         }
     } else if (isLoggedIn) {
-        if (!isClaimed) {
-            btnHTML = `<button class="claim-btn claim-btn-primary" onclick="claimPharmacy(${idx})">⚔️ 입점 완료! 점령하기</button>`;
+        if (isUnavailable) {
+            btnHTML = `<button class="claim-btn claim-btn-secondary" onclick="unclaimPharmacy(${idx})">🚫 점령불가 해제</button>`;
+        } else if (!isClaimed) {
+            btnHTML = `<button class="claim-btn claim-btn-primary" onclick="claimPharmacy(${idx})">⚔️ 입점 완료! 점령하기</button>
+                       <button class="claim-btn claim-btn-secondary" onclick="markUnavailablePharmacy(${idx})" style="margin-top:6px;border-color:#9CA3AF;color:#CBD5E1;">🚫 점령불가 입력</button>`;
         } else if (isMineClaimed) {
             btnHTML = `<button class="claim-btn claim-btn-secondary" onclick="unclaimPharmacy(${idx})">🗑️ 점령 취소</button>`;
         } else {
@@ -1407,6 +1501,7 @@ function buildPopup(idx) {
     }
 
     const marketBadge = `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${getBaseColor(pharm.market_type)}33;color:${getBaseColor(pharm.market_type)};font-weight:700;">${pharm.market_type}</span>`;
+    const priorityBadge = getPriorityBadge(pharm);
 
     const tradingHTML = `
         <div style="margin-top:8px;">
@@ -1420,9 +1515,9 @@ function buildPopup(idx) {
     return `<div class="claim-popup">
         <div class="pharmacy-name">${pharm.name}</div>
         <div class="pharmacy-meta">
-            ${marketBadge}<br>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;">${marketBadge}${priorityBadge}</div>
             📍 ${pharm.address.substring(0, 50)}${pharm.address.length > 50 ? '...' : ''}<br>
-            📞 ${pharm.phone}
+            📞 ${pharm.phone || '-'}
         </div>
         ${claimedHTML}
         ${tradingHTML}
@@ -1438,11 +1533,12 @@ function claimPharmacy(idx) {
     if (!gameState.currentPlayer) { showSetup(); return; }
     const player = gameState.players[gameState.currentPlayer];
 
-    gameState.pharmacyStates[idx] = {
+    setStateByIndex(idx, {
+        status: 'claimed',
         claimed_by: gameState.currentPlayer,
         color: player.color,
         claimed_at: new Date().toISOString()
-    };
+    });
 
     saveState();
     refreshMarker(idx);
@@ -1453,12 +1549,44 @@ function claimPharmacy(idx) {
     const pharm = PHARMACY_DATA[idx];
     showToast(`🏴 ${pharm.name} 점령 완료!`);
 
-    // Achievement check
     checkAchievements();
 }
 
+function markUnavailablePharmacy(idx) {
+    if (window._isMasterAdmin) {
+        showToast('관리자는 상태 해제만 가능합니다.');
+        return;
+    }
+    if (!gameState.currentPlayer) { showSetup(); return; }
+    const reason = (prompt('점령불가 사유를 10자 이내로 입력하세요') || '').trim();
+    if (!reason) {
+        showToast('점령불가 사유를 입력해주세요.');
+        return;
+    }
+    if (reason.length > 10) {
+        showToast('점령불가 사유는 10자 이내로 입력해주세요.');
+        return;
+    }
+
+    setStateByIndex(idx, {
+        status: 'unavailable',
+        unavailable_reason: reason,
+        updated_by: gameState.currentPlayer,
+        updated_at: new Date().toISOString()
+    });
+
+    saveState();
+    refreshMarker(idx);
+    updateLeaderboard();
+    updateMyStats();
+    if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
+    map.closePopup();
+    if (_gameMode === 'online' && typeof saveToFirebase === 'function') saveToFirebase(idx);
+    showToast('점령불가로 표시했습니다.');
+}
+
 function unclaimPharmacy(idx) {
-    delete gameState.pharmacyStates[idx];
+    deleteStateByIndex(idx);
     saveState();
     refreshMarker(idx);
     updateLeaderboard();
@@ -1469,7 +1597,7 @@ function unclaimPharmacy(idx) {
 
 function masterAdminUnclaim(idx) {
     if (!window._isMasterAdmin) return;
-    delete gameState.pharmacyStates[idx];
+    deleteStateByIndex(idx);
     const p = PHARMACY_DATA[idx];
     if (p) { p.claimed_by = null; p.claimed_at = null; }
     saveState();
@@ -1484,30 +1612,37 @@ function masterAdminUnclaim(idx) {
 
 function refreshMarker(idx) {
     const pharm = PHARMACY_DATA[idx];
-    const state = gameState.pharmacyStates[idx];
+    const state = getStateByIndex(idx);
     const m = pharmacyMarkers[idx];
     if (!m) return;
 
-    if (state) {
+    if (isUnavailableState(state)) {
+        m.setStyle({
+            color: '#9CA3AF',
+            fillColor: '#111827',
+            fillOpacity: 0.45,
+            radius: 7,
+            weight: 3
+        });
+    } else if (isClaimedState(state)) {
         m.setStyle({
             color: state.color,
             fillColor: state.color,
             fillOpacity: 0.95,
-            radius: 9,
-            weight: 3
+            radius: pharm.priority_target ? 11 : 9,
+            weight: pharm.priority_target ? 4 : 3
         });
     } else {
         const base = getBaseColor(pharm.market_type);
         m.setStyle({
-            color: base,
+            color: pharm.priority_target ? '#FFD166' : base,
             fillColor: base,
-            fillOpacity: 0.65,
-            radius: 6,
-            weight: 1.5
+            fillOpacity: pharm.priority_target ? 0.9 : 0.65,
+            radius: pharm.priority_target ? 10 : 6,
+            weight: pharm.priority_target ? 4 : 1.5
         });
     }
 
-    // Apply filter visibility
     applyVisibility(idx, m);
 }
 
@@ -1517,16 +1652,18 @@ function refreshAllMarkers() {
 
 function applyVisibility(idx, m) {
     const pharm = PHARMACY_DATA[idx];
-    const state = gameState.pharmacyStates[idx];
+    const state = getStateByIndex(idx);
 
     let show = true;
-    if (currentFilter !== 'all' && pharm.market_type !== currentFilter) show = false;
-    if (currentViewMode === 'claimed'   && !state) show = false;
-    if (currentViewMode === 'unclaimed' &&  state) show = false;
-    // 지점/담당자 필터
-    if (typeof currentBranch  !== 'undefined' && currentBranch  !== 'all' && currentBranch !== '기타' && pharm.branch   !== currentBranch)  show = false;
-    // 수기입력 방식 도입으로 담당자 기반 마커 필터링을 비활성화합니다. (모든 직원이 해당 지점의 전체 약국을 볼 수 있음)
-    // if (typeof currentManager !== 'undefined' && currentManager && pharm.manager  !== currentManager) show = false;
+    if (currentFilter === 'priority') {
+        if (!pharm.priority_target) show = false;
+    } else if (currentFilter !== 'all' && pharm.market_type !== currentFilter) {
+        show = false;
+    }
+    if (currentViewMode === 'claimed' && !isClaimedState(state)) show = false;
+    if (currentViewMode === 'unclaimed' && state) show = false;
+    if (currentViewMode === 'unavailable' && !isUnavailableState(state)) show = false;
+    if (typeof currentBranch !== 'undefined' && currentBranch !== 'all' && currentBranch !== '기타' && pharm.branch !== currentBranch) show = false;
 
     if (!markerClusterGroup) return;
     if (show) {
@@ -1551,7 +1688,6 @@ function setViewMode(mode) {
     document.querySelectorAll('[data-mode]').forEach(c => {
         const isActive = c.dataset.mode === mode;
         c.classList.toggle('active', isActive);
-        // 활성 상태에 따라 눈에 띄는 배경색 적용
         if (c.dataset.mode === 'claimed') {
             c.style.background = isActive ? 'rgba(50,205,50,0.5)' : 'rgba(50,205,50,0.15)';
             c.style.borderColor = isActive ? '#fff' : '#4CAF50';
@@ -1560,6 +1696,10 @@ function setViewMode(mode) {
             c.style.background = isActive ? 'rgba(255,165,0,0.5)' : 'rgba(255,255,255,0.05)';
             c.style.borderColor = isActive ? '#fff' : '#555';
             c.style.color = isActive ? '#fff' : '#aaa';
+        } else if (c.dataset.mode === 'unavailable') {
+            c.style.background = isActive ? 'rgba(156,163,175,0.55)' : 'rgba(156,163,175,0.18)';
+            c.style.borderColor = isActive ? '#fff' : '#9CA3AF';
+            c.style.color = isActive ? '#fff' : '#CBD5E1';
         } else if (c.dataset.mode === 'all') {
             c.style.background = isActive ? '#e94560' : '#444';
             c.style.borderColor = isActive ? '#fff' : 'transparent';
@@ -1571,7 +1711,7 @@ function setViewMode(mode) {
 // =================== STATS / UI ===================
 function updateLeaderboard() {
     const scores = {};
-    Object.values(gameState.pharmacyStates).forEach(s => {
+    getClaimedStateEntries().forEach(([, s]) => {
         scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
     });
 
@@ -1602,37 +1742,38 @@ function updateMyStats() {
     
     let total = 0;
     let claimed = 0;
+    let unavailable = 0;
     const isMaster = window._isMasterAdmin;
     const user = gameState.currentPlayer;
-    const myBranch = user.includes('_') ? user.split('_')[0] : user;
+    const myBranch = user && user.includes('_') ? user.split('_')[0] : user;
 
     if (isMaster) {
         total = PHARMACY_DATA.length;
-        claimed = Object.keys(gameState.pharmacyStates).length;
+        claimed = getClaimedStateEntries().length;
+        unavailable = getUnavailableStateEntries().length;
     } else {
-        // 일반 유저는 본인 지점의 약국 통계 표시
-        const myBranch = user.includes('_') ? user.split('_')[0] : user;
         const myBranchPharmacies = myBranch === '기타' ? PHARMACY_DATA : PHARMACY_DATA.filter(p => p.branch === myBranch);
         total = myBranchPharmacies.length;
-        claimed = Object.entries(gameState.pharmacyStates).filter(([idx, s]) => {
-            const p = PHARMACY_DATA[parseInt(idx)];
-            return p && (myBranch === '기타' || p.branch === myBranch) && s.claimed_by;
+        claimed = getClaimedStateEntries().filter(([key]) => {
+            const p = getPharmacyByStateKey(key);
+            return p && (myBranch === '기타' || p.branch === myBranch);
+        }).length;
+        unavailable = getUnavailableStateEntries().filter(([key]) => {
+            const p = getPharmacyByStateKey(key);
+            return p && (myBranch === '기타' || p.branch === myBranch);
         }).length;
     }
     
-    const myCount = user ? Object.values(gameState.pharmacyStates).filter(s => s.claimed_by === user).length : 0;
-    const remain = total - claimed;
+    const myCount = user ? getClaimedStateEntries().filter(([, s]) => s.claimed_by === user).length : 0;
+    const remain = Math.max(0, total - claimed - unavailable);
 
     document.getElementById('stat-mine').textContent = (isMaster ? claimed : myCount) + '개';
     document.getElementById('stat-remain').textContent = remain + '개';
     document.getElementById('my-score').textContent = isMaster ? claimed : myCount;
 
-    // Rank (일반 지점 영업팀 간의 순위)
     const scores = {};
-    Object.values(gameState.pharmacyStates).forEach(s => {
-        if (s.claimed_by) {
-            scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
-        }
+    getClaimedStateEntries().forEach(([, s]) => {
+        scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
     });
     const sorted = Object.entries(scores).sort((a,b) => b[1]-a[1]);
     const rank = user ? (sorted.findIndex(([n]) => n === user) + 1) : 0;
@@ -1642,7 +1783,6 @@ function updateMyStats() {
     document.getElementById('my-progress-bar').style.width = pct + '%';
     document.getElementById('my-progress-text').textContent = (isMaster ? claimed : myCount) + ' / ' + total;
 
-    // 상권별 점령 현황 업데이트
     const marketBreakdown = document.getElementById('market-breakdown');
     if (marketBreakdown) {
         const markets = [
@@ -1651,18 +1791,11 @@ function updateMyStats() {
             { key: '성형·피부과',label: '💉 성형·피부과',color: '#8E3DFF' },
             { key: '주거',       label: '🏡 주거',       color: '#4CAF50' },
         ];
-        const myStates = Object.entries(gameState.pharmacyStates)
-            .filter(([idx, s]) => s.claimed_by === (isMaster ? s.claimed_by : user));
         marketBreakdown.innerHTML = markets.map(m => {
-            const cnt = isMaster
-                ? Object.values(gameState.pharmacyStates).filter(s => {
-                    const p = PHARMACY_DATA[Object.keys(gameState.pharmacyStates).indexOf(Object.keys(gameState.pharmacyStates).find(k => gameState.pharmacyStates[k] === s))];
-                    return p && p.market_type === m.key;
-                  }).length
-                : Object.entries(gameState.pharmacyStates).filter(([idx, s]) => {
-                    const p = PHARMACY_DATA[parseInt(idx)];
-                    return s.claimed_by === user && p && p.market_type === m.key;
-                  }).length;
+            const cnt = getClaimedStateEntries().filter(([key, s]) => {
+                const p = getPharmacyByStateKey(key);
+                return p && p.market_type === m.key && (isMaster || s.claimed_by === user);
+            }).length;
             const totalMarket = PHARMACY_DATA.filter(p => p.market_type === m.key).length;
             const mPct = totalMarket > 0 ? (cnt / totalMarket * 100).toFixed(1) : '0.0';
             return `<div style="margin-bottom:3px;">
@@ -1682,7 +1815,7 @@ function updateMyStats() {
 // =================== ACHIEVEMENTS ===================
 function checkAchievements() {
     if (!gameState.currentPlayer) return;
-    const myCount = Object.values(gameState.pharmacyStates).filter(s => s.claimed_by === gameState.currentPlayer).length;
+    const myCount = getClaimedStateEntries().filter(([, s]) => s.claimed_by === gameState.currentPlayer).length;
 
     const milestones = [
         [1, '🎉 첫 번째 약국 점령!'],
@@ -1738,13 +1871,15 @@ function exportData() {
     const scores = {};
     const details = {};
     
-    Object.entries(gameState.pharmacyStates).forEach(([idx, s]) => {
-        const pharm = PHARMACY_DATA[parseInt(idx)];
+    getClaimedStateEntries().forEach(([key, s]) => {
+        const pharm = getPharmacyByStateKey(key);
+        if (!pharm) return;
         scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
         if (!details[s.claimed_by]) details[s.claimed_by] = [];
         details[s.claimed_by].push({
             약국명: pharm.name,
             상권유형: pharm.market_type,
+            우선선점: pharm.priority_target ? 'Y' : 'N',
             주소: pharm.address,
             전화: pharm.phone,
             점령일: new Date(s.claimed_at).toLocaleDateString('ko-KR')
@@ -1757,12 +1892,22 @@ function exportData() {
         csv += `${i+1},${name},${count},${(count/PHARMACY_DATA.length*100).toFixed(1)}%\n`;
     });
 
-    csv += '\n\n약국 상세 목록\n이름,약국명,상권유형,주소,점령일\n';
+    csv += '\n\n약국 상세 목록\n이름,약국명,상권유형,우선선점,주소,점령일\n';
     Object.entries(details).forEach(([name, pharmacies]) => {
         pharmacies.forEach(p => {
-            csv += `${name},"${p.약국명}","${p.상권유형}","${p.주소}",${p.점령일}\n`;
+            csv += `${name},"${p.약국명}","${p.상권유형}",${p.우선선점},"${p.주소}",${p.점령일}\n`;
         });
     });
+
+    const unavailable = getUnavailableStateEntries();
+    if (unavailable.length) {
+        csv += '\n\n점령불가 목록\n약국명,사유,처리자,주소\n';
+        unavailable.forEach(([key, s]) => {
+            const p = getPharmacyByStateKey(key);
+            if (!p) return;
+            csv += `"${p.name}","${s.unavailable_reason || ''}","${s.updated_by || ''}","${p.address || ''}"\n`;
+        });
+    }
 
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1892,17 +2037,32 @@ function isMasterAdminEmail(email) {
     return MASTER_ADMIN_EMAILS.indexOf(String(email).trim().toLowerCase()) >= 0;
 }
 
-function syncFirebasePharmacyRowToGameState(i, newBy, newAt) {
+function syncFirebasePharmacyRowToGameState(i, row) {
     var p = PHARMACY_DATA[i];
     if (!p) return;
-    p.claimed_by = newBy;
-    p.claimed_at = newAt;
-    if (newBy) {
-        var pl = gameState.players[newBy];
-        var col = pl && pl.color ? pl.color : '#aaa';
-        gameState.pharmacyStates[i] = { claimed_by: newBy, color: col, claimed_at: newAt };
+    row = row || {};
+    if (row.hasOwnProperty('is_trading')) p.is_trading = row.is_trading;
+
+    var status = row.status || (row.claimed_by ? 'claimed' : null);
+    if (status === 'unavailable') {
+        p.claimed_by = null;
+        p.claimed_at = null;
+        setStateByIndex(i, {
+            status: 'unavailable',
+            unavailable_reason: String(row.unavailable_reason || '').slice(0, 10),
+            updated_by: row.updated_by || '',
+            updated_at: row.updated_at || new Date().toISOString()
+        });
+    } else if (row.claimed_by) {
+        p.claimed_by = row.claimed_by;
+        p.claimed_at = row.claimed_at || null;
+        var pl = gameState.players[row.claimed_by];
+        var col = row.color || (pl && pl.color ? pl.color : '#aaa');
+        setStateByIndex(i, { status: 'claimed', claimed_by: row.claimed_by, color: col, claimed_at: row.claimed_at || new Date().toISOString() });
     } else {
-        delete gameState.pharmacyStates[i];
+        p.claimed_by = null;
+        p.claimed_at = null;
+        deleteStateByIndex(i);
     }
 }
 
@@ -1946,12 +2106,9 @@ async function loadFromFirebase() {
         if (snap.exists()) {
             var fbData = snap.val();
             PHARMACY_DATA.forEach(function(p, i) {
-                var row = fbData[i];
+                var row = fbData[getPharmacyKey(i)] || fbData[i];
                 if (!row) return;
-                var newBy = row.claimed_by || null;
-                var newAt = row.claimed_at || null;
-                if (row.hasOwnProperty('is_trading')) p.is_trading = row.is_trading;
-                syncFirebasePharmacyRowToGameState(i, newBy, newAt);
+                syncFirebasePharmacyRowToGameState(i, row);
             });
             saveState();
         }
@@ -1966,24 +2123,17 @@ function startFirebaseListener() {
 
     var pRef = imp.ref(_db, 'rooms/' + _roomId + '/pharmacies');
     _fbUnsubPharmacies = imp.onValue(pRef, function(snap) {
-        if (!snap.exists()) return;
-        var fbData = snap.val();
+        var fbData = snap.exists() ? snap.val() : {};
         var changed = false;
         PHARMACY_DATA.forEach(function(p, i) {
-            var remote = fbData[i] || {};
-            var newBy = remote.claimed_by || null;
-            var newAt = remote.claimed_at || null;
-            var newTrading = remote.hasOwnProperty('is_trading') ? remote.is_trading : p.is_trading;
+            var remote = fbData[getPharmacyKey(i)] || fbData[i] || {};
+            var before = JSON.stringify({ state: getStateByIndex(i), trading: p.is_trading });
+            var wasUnclaimed = !isClaimedState(getStateByIndex(i)) && !!remote.claimed_by;
+            syncFirebasePharmacyRowToGameState(i, remote);
+            var after = JSON.stringify({ state: getStateByIndex(i), trading: p.is_trading });
 
-            if (p.claimed_by !== newBy || p.claimed_at !== newAt || p.is_trading !== newTrading) {
-                var wasUnclaimed = !p.claimed_by && newBy;
-                p.claimed_by = newBy;
-                p.claimed_at = newAt;
-                p.is_trading = newTrading;
-                syncFirebasePharmacyRowToGameState(i, newBy, newAt);
-
+            if (before !== after) {
                 refreshMarker(i);
-
                 var yesBtn = document.getElementById('tbtn-yes-' + i);
                 var noBtn = document.getElementById('tbtn-no-' + i);
                 if (yesBtn && noBtn) {
@@ -1991,8 +2141,8 @@ function startFirebaseListener() {
                     noBtn.classList.toggle('active-no', !p.is_trading);
                 }
 
-                if (wasUnclaimed && newBy && newBy !== _currentName && !(window._isMasterAdmin && !gameState.currentPlayer)) {
-                    showToast('🚩 ' + newBy + '님이 점령!');
+                if (wasUnclaimed && remote.claimed_by && remote.claimed_by !== _currentName && !(window._isMasterAdmin && !gameState.currentPlayer)) {
+                    showToast('🚩 ' + remote.claimed_by + '님이 점령!');
                 }
                 changed = true;
             }
@@ -2001,6 +2151,7 @@ function startFirebaseListener() {
         if (changed) {
             saveState();
             updateLeaderboard();
+            updateMyStats();
             if (typeof updateIncentive === 'function') updateIncentive();
             if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
         }
@@ -2035,15 +2186,22 @@ function startFirebaseListener() {
 async function saveToFirebase(idx) {
     if (!_db || !_roomId) return;
     var imp = window._fbImports;
-    var st = gameState.pharmacyStates[idx];
+    var st = getStateByIndex(idx);
     var pharm = PHARMACY_DATA[idx];
     if (!pharm) return;
+    var key = getPharmacyKey(idx);
     var updates = {};
-    updates['rooms/' + _roomId + '/pharmacies/' + idx + '/claimed_by'] = st ? st.claimed_by : null;
-    updates['rooms/' + _roomId + '/pharmacies/' + idx + '/claimed_at'] = st ? st.claimed_at : null;
-    updates['rooms/' + _roomId + '/pharmacies/' + idx + '/is_trading'] = !!pharm.is_trading;
-    pharm.claimed_by = st ? st.claimed_by : null;
-    pharm.claimed_at = st ? st.claimed_at : null;
+    var base = 'rooms/' + _roomId + '/pharmacies/' + key;
+    updates[base + '/status'] = st ? (st.status || 'claimed') : null;
+    updates[base + '/claimed_by'] = isClaimedState(st) ? st.claimed_by : null;
+    updates[base + '/claimed_at'] = isClaimedState(st) ? st.claimed_at : null;
+    updates[base + '/color'] = isClaimedState(st) ? st.color : null;
+    updates[base + '/unavailable_reason'] = isUnavailableState(st) ? st.unavailable_reason : null;
+    updates[base + '/updated_by'] = isUnavailableState(st) ? st.updated_by : null;
+    updates[base + '/updated_at'] = isUnavailableState(st) ? st.updated_at : null;
+    updates[base + '/is_trading'] = !!pharm.is_trading;
+    pharm.claimed_by = isClaimedState(st) ? st.claimed_by : null;
+    pharm.claimed_at = isClaimedState(st) ? st.claimed_at : null;
     try { await imp.update(imp.ref(_db), updates); }
     catch(e) { console.error("Firebase 저장 오류:", e); }
 }
@@ -2076,12 +2234,14 @@ function refreshMasterDashboard() {
     if (!dash || !dash.classList.contains('open')) return;
 
     var total = PHARMACY_DATA.length;
-    var claimed = Object.keys(gameState.pharmacyStates || {}).length;
+    var claimed = getClaimedStateEntries().length;
+    var unavailable = getUnavailableStateEntries().length;
     var pct = total ? ((claimed / total) * 100).toFixed(1) : '0';
 
     var playerKeys = {};
     Object.keys(gameState.players || {}).forEach(function(k) { playerKeys[k] = true; });
-    Object.values(gameState.pharmacyStates || {}).forEach(function(s) {
+    getClaimedStateEntries().forEach(function(ent) {
+        var s = ent[1];
         if (s && s.claimed_by) playerKeys[s.claimed_by] = true;
     });
     var playerCount = Object.keys(playerKeys).length;
@@ -2091,14 +2251,15 @@ function refreshMasterDashboard() {
         grid.innerHTML =
             '<div class="master-stat-card"><div class="lbl">총 약국 수</div><div class="val">' + total + '</div></div>' +
             '<div class="master-stat-card"><div class="lbl">점령됨</div><div class="val">' + claimed + '</div></div>' +
-            '<div class="master-stat-card"><div class="lbl">미점령</div><div class="val">' + (total - claimed) + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">미점령</div><div class="val">' + Math.max(0, total - claimed - unavailable) + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">점령불가</div><div class="val">' + unavailable + '</div></div>' +
             '<div class="master-stat-card"><div class="lbl">점유율</div><div class="val">' + pct + '%</div></div>' +
             '<div class="master-stat-card"><div class="lbl">참여자(추정)</div><div class="val">' + playerCount + '</div></div>';
     }
 
     var scores = {};
-    Object.values(gameState.pharmacyStates || {}).forEach(function(s) {
-        if (!s || !s.claimed_by) return;
+    getClaimedStateEntries().forEach(function(ent) {
+        var s = ent[1];
         scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
     });
     var sorted = Object.entries(scores).sort(function(a, b) { return b[1] - a[1]; });
@@ -2112,11 +2273,9 @@ function refreshMasterDashboard() {
     }
 
     var byBranch = {};
-    Object.entries(gameState.pharmacyStates || {}).forEach(function(ent) {
-        var idx = parseInt(ent[0], 10);
-        var s = ent[1];
-        var ph = PHARMACY_DATA[idx];
-        if (!ph || !s || !s.claimed_by) return;
+    getClaimedStateEntries().forEach(function(ent) {
+        var ph = getPharmacyByStateKey(ent[0]);
+        if (!ph) return;
         byBranch[ph.branch] = (byBranch[ph.branch] || 0) + 1;
     });
     var brRows = Object.entries(byBranch).sort(function(a, b) { return b[1] - a[1]; });
@@ -2431,8 +2590,9 @@ function inPeriod(ts, period) {
 function calcScore(states, period) {
     let score = 0, newCnt = 0, oldCnt = 0;
     Object.entries(states).forEach(([idx, s]) => {
+        if (!isClaimedState(s)) return;
         if (period !== 'total' && !inPeriod(s.claimed_at, period)) return;
-        const p = PHARMACY_DATA[parseInt(idx)];
+        const p = getPharmacyByStateKey(idx);
         if (!p) return;
         if (!p.is_trading) { score += 3; newCnt++; } 
         else               { score += 1; oldCnt++; }
@@ -2447,16 +2607,16 @@ function updateIncentive() {
     sec.style.display = 'block';
 
     const myStates = {};
-    Object.entries(gameState.pharmacyStates).forEach(([i,s]) => {
+    getClaimedStateEntries().forEach(([i,s]) => {
         if (s.claimed_by === gameState.currentPlayer) myStates[i] = s;
     });
 
     // 지점별 전체 집계
     const allStates = gameState.pharmacyStates;
     const byBranch = {};
-    PHARMACY_DATA.forEach((p,i) => {
-        const s = allStates[i];
-        if (!s) return;
+    getClaimedStateEntries().forEach(([key, s]) => {
+        const p = getPharmacyByStateKey(key);
+        if (!p) return;
         if (!byBranch[p.branch]) byBranch[p.branch] = [];
         byBranch[p.branch].push({s,p});
     });
@@ -2479,9 +2639,9 @@ function updateIncentive() {
     // 지점별 순위
     const branchRows = Object.keys(byBranch).map(br => {
         let sc=0,nc=0,oc=0;
-        PHARMACY_DATA.forEach((p,idx) => {
-            const s = allStates[idx];
-            if (!s || p.branch !== br) return;
+        getClaimedStateEntries().forEach(([key, s]) => {
+            const p = getPharmacyByStateKey(key);
+            if (!p || p.branch !== br) return;
             if (period !== 'total' && !inPeriod(s.claimed_at, period)) return;
             if (!p.is_trading) { sc+=3; nc++; } else { sc+=1; oc++; }
         });
@@ -2515,7 +2675,7 @@ function toggleTrading(idx, val) {
         const imp = window._fbImports;
         if (imp && window._db && window._roomId) {
             const upd = {};
-            upd['rooms/'+window._roomId+'/pharmacies/'+idx+'/is_trading'] = val;
+            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/is_trading'] = val;
             imp.update(imp.ref(window._db), upd).catch(()=>{});
         }
     }
@@ -2568,7 +2728,7 @@ function showSearchResultList(results) {
     const container = document.getElementById('search-results');
     let html = '<div style="font-size:11px;color:#888;padding:4px 0;">검색 결과: ' + results.length + '건</div>';
     results.forEach(({p, idx}) => {
-        const state = gameState.pharmacyStates[idx];
+        const state = getStateByIndex(idx);
         const dot = state ? '🟢' : '⚪';
         html += '<div onclick="selectSearchResult(' + idx + ')" style="padding:6px 8px;cursor:pointer;border-bottom:1px solid #333;font-size:12px;transition:background .2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.1)\'" onmouseout="this.style.background=\'transparent\'">'
             + dot + ' <strong>' + p.name + '</strong>'
