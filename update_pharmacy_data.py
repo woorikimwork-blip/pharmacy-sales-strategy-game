@@ -9,7 +9,8 @@ import sys
 import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 ENV_FILE = Path(".env")
 DATA_FILE = Path("pharmacy_data.js")
@@ -63,19 +64,21 @@ def get_service_key():
 
 
 def build_url(page_no, num_of_rows=1000, sido_cd=""):
-    service_key = get_service_key()
-    url = (
-        f"{BASE_URL}?serviceKey={service_key}"
-        f"&pageNo={page_no}&numOfRows={num_of_rows}&_type=json"
-    )
+    params = {
+        "serviceKey": get_service_key(),
+        "pageNo": page_no,
+        "numOfRows": num_of_rows,
+        "_type": "json",
+    }
     if sido_cd:
-        url += f"&sidoCd={sido_cd}"
-    return url
+        params["sidoCd"] = sido_cd
+    return BASE_URL + "?" + urlencode(params)
 
 
 def fetch_page(page_no, num_of_rows=1000, sido_cd=""):
     try:
-        with urlopen(build_url(page_no, num_of_rows, sido_cd), timeout=30) as resp:
+        request = Request(build_url(page_no, num_of_rows, sido_cd), headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(request, timeout=30) as resp:
             status = resp.getcode()
             if status != 200:
                 print(f"    HTTP {status} error")
