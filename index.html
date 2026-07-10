@@ -713,7 +713,7 @@ let map;
 // Load saved state
 function loadState() {
     try {
-        const saved = localStorage.getItem('pharmacy_game_v2');
+        const saved = localStorage.getItem('pharmacy_game_v3_reset');
         if (saved) {
             const parsed = JSON.parse(saved);
             gameState.players = parsed.players || {};
@@ -726,7 +726,7 @@ function loadState() {
 
 function saveState() {
     try {
-        localStorage.setItem('pharmacy_game_v2', JSON.stringify({
+        localStorage.setItem('pharmacy_game_v3_reset', JSON.stringify({
             players: gameState.players,
             pharmacyStates: gameState.pharmacyStates
         }));
@@ -1189,7 +1189,7 @@ if (existingNames.length > 0) {
 // ===== FIREBASE MULTI-PLAYER SUPPORT =====
 var _gameMode = 'online';
 var _db = null;
-var _roomId = 'DERMA_V2_LIVE'; // 고정 방 코드 - 모든 지점이 하나의 맵 공유
+var _roomId = 'DERMA_V3_RESET'; // 고정 방 코드 - 모든 지점이 하나의 맵 공유
 var _fbListener = null;
 var _currentName = null;
 
