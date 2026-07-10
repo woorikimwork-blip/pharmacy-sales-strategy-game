@@ -4,7 +4,7 @@
 """
 import json, re
 
-GAME_FILE = "약국_영토점령_게임_v2.html"
+DATA_FILE = "pharmacy_data.js"
 
 # =============================================
 # 지점별 담당 지역 매핑 (시도 + 시군구 기준)
@@ -125,7 +125,7 @@ print("=" * 55)
 
 # 1. 기존 게임 데이터 로드
 print("\n[1] 기존 게임 데이터 로드...")
-with open(GAME_FILE, "r", encoding="utf-8") as f:
+with open(DATA_FILE, "r", encoding="utf-8") as f:
     content = f.read()
 match = re.search(r'const PHARMACY_DATA = (\[.*?\]);', content, re.DOTALL)
 existing = json.loads(match.group(1))
@@ -211,10 +211,10 @@ new_content = re.sub(
     new_content
 )
 
-with open(GAME_FILE, "w", encoding="utf-8") as f:
+with open(DATA_FILE, "w", encoding="utf-8") as f:
     f.write(new_content)
 
-print(f"  저장 완료: {GAME_FILE}")
+print(f"  저장 완료: {DATA_FILE}")
 print()
 print("=" * 55)
 print(f"  완료! 총 {len(final_data):,}개 약국")

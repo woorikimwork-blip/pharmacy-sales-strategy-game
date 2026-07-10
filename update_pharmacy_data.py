@@ -1,17 +1,22 @@
+"""Update pharmacy master data from the public pharmacy API.
+
+Secrets are read from .env or the process environment. Do not hard-code API keys.
 """
-심평원 약국정보 API → 게임 데이터 업데이트 스크립트
-HTTP 엔드포인트 사용 (HTTPS 401 오류)
-"""
-import requests
 import json
+import os
 import re
+import sys
 import time
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 
-SERVICE_KEY = "9d0dab2e69b917b41ce64b1fdb7e5974cce193e23eb593819259578cceb2dc67"
+ENV_FILE = Path(".env")
+DATA_FILE = Path("pharmacy_data.js")
+REPORT_FILE = Path("update_report.json")
+SERVICE_KEY_ENV = "PUBLIC_DATA_SERVICE_KEY"
 BASE_URL = "http://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList"
-GAME_FILE = "약국_영토점령_게임_v2.html"
 
-# 게임에 포함된 지역의 심평원 시도코드
 SIDO_CODES = {
     "110000": "서울특별시",
     "210000": "부산광역시",
@@ -22,29 +27,70 @@ SIDO_CODES = {
     "260000": "울산광역시",
     "290000": "세종특별자치시",
     "310000": "경기도",
-    "410000": "제주특별자치도",
+    "320000": "강원특별자치도",
+    "330000": "충청북도",
+    "340000": "충청남도",
+    "350000": "전북특별자치도",
+    "360000": "전라남도",
+    "370000": "경상북도",
+    "380000": "경상남도",
+    "390000": "제주특별자치도",
 }
 
-def fetch_page(page_no, num_of_rows=1000, sido_cd=""):
-    """API 1페이지 호출"""
-    url = f"{BASE_URL}?serviceKey={SERVICE_KEY}&pageNo={page_no}&numOfRows={num_of_rows}&_type=json"
+
+def load_dotenv(path=ENV_FILE):
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+def get_service_key():
+    load_dotenv()
+    service_key = os.environ.get(SERVICE_KEY_ENV, "").strip()
+    if not service_key:
+        raise RuntimeError(
+            f"{SERVICE_KEY_ENV} is missing. Create .env from .env.example and put your API key there."
+        )
+    return service_key
+
+
+def build_url(page_no, num_of_rows=1000, sido_cd=""):
+    service_key = get_service_key()
+    url = (
+        f"{BASE_URL}?serviceKey={service_key}"
+        f"&pageNo={page_no}&numOfRows={num_of_rows}&_type=json"
+    )
     if sido_cd:
         url += f"&sidoCd={sido_cd}"
+    return url
+
+
+def fetch_page(page_no, num_of_rows=1000, sido_cd=""):
     try:
-        resp = requests.get(url, timeout=30)
-        if resp.status_code != 200:
-            print(f"    HTTP {resp.status_code} 오류")
-            return None
-        return resp.json()
-    except Exception as e:
-        print(f"    요청 오류: {e}")
+        with urlopen(build_url(page_no, num_of_rows, sido_cd), timeout=30) as resp:
+            status = resp.getcode()
+            if status != 200:
+                print(f"    HTTP {status} error")
+                return None
+            text = resp.read().decode("utf-8-sig")
+            return json.loads(text)
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
+        print(f"    request error: {exc}")
         return None
 
+
 def fetch_all_by_region():
-    """지역별 전체 약국 수집"""
     all_items = []
     for sido_cd, sido_name in SIDO_CODES.items():
-        print(f"  [{sido_name}] 수집 중...", end="", flush=True)
+        print(f"  [{sido_name}] fetching...", end="", flush=True)
         page_no = 1
         region_count = 0
         while True:
@@ -53,7 +99,7 @@ def fetch_all_by_region():
                 break
             try:
                 body = data["response"]["body"]
-                total = int(body["totalCount"])
+                total = int(body.get("totalCount") or 0)
                 if total == 0:
                     break
                 items_raw = body.get("items", {})
@@ -68,55 +114,51 @@ def fetch_all_by_region():
                     break
                 page_no += 1
                 time.sleep(0.2)
-            except Exception as e:
-                print(f"\n    파싱 오류: {e}")
+            except Exception as exc:
+                print(f" parse error: {exc}")
                 break
-        print(f" {region_count}개")
+        print(f" {region_count} rows")
     return all_items
 
-def load_game_data():
-    """기존 게임 HTML에서 PHARMACY_DATA 추출"""
-    with open(GAME_FILE, "r", encoding="utf-8") as f:
-        content = f.read()
-    match = re.search(r'const PHARMACY_DATA = (\[.*?\]);', content, re.DOTALL)
+
+def load_pharmacy_data():
+    content = DATA_FILE.read_text(encoding="utf-8")
+    match = re.search(r"const\s+PHARMACY_DATA\s*=\s*(\[.*\]);\s*$", content, re.DOTALL)
     if not match:
-        raise Exception("PHARMACY_DATA를 찾을 수 없음")
+        raise RuntimeError(f"PHARMACY_DATA was not found in {DATA_FILE}")
     existing = json.loads(match.group(1))
-    print(f"  기존 약국: {len(existing)}개")
+    print(f"  current pharmacies: {len(existing):,}")
     return existing, content
 
-def build_key(name, addr):
-    """매칭용 고유키"""
-    n = re.sub(r'\s+', '', name or "")
-    a = re.sub(r'\s+', '', addr or "")[:25]
-    return f"{n}|{a}"
+
+def normalize_key(name, addr):
+    normalized_name = re.sub(r"\s+", "", name or "")
+    normalized_addr = re.sub(r"\s+", "", addr or "")[:80]
+    return f"{normalized_name}|{normalized_addr}"
+
 
 def get_coord(item):
-    """API 항목에서 위도/경도 추출"""
-    for yk, xk in [("YPos","XPos"), ("yPos","xPos"), ("latitude","longitude"), ("lat","lon")]:
-        y = item.get(yk)
-        x = item.get(xk)
+    for y_key, x_key in [("YPos", "XPos"), ("yPos", "xPos"), ("latitude", "longitude"), ("lat", "lon")]:
+        y = item.get(y_key)
+        x = item.get(x_key)
         if y and x:
             try:
                 return float(y), float(x)
-            except:
+            except (TypeError, ValueError):
                 pass
     return None, None
 
+
 def merge(existing, api_items):
-    """기존 데이터 + API 데이터 병합"""
-    print(f"\n🔄 병합 중...")
+    print("\nMerging data...")
+    existing_lookup = {normalize_key(row.get("name"), row.get("address")): row for row in existing}
 
-    # 기존 인덱싱
-    ex_lookup = {build_key(d["name"], d["address"]): d for d in existing}
-
-    # API 인덱싱
     api_lookup = {}
     for item in api_items:
         name = item.get("yadmNm", "")
         addr = item.get("addr", "")
         if name and addr:
-            api_lookup[build_key(name, addr)] = item
+            api_lookup[normalize_key(name, addr)] = item
 
     coord_updated = 0
     phone_updated = 0
@@ -125,121 +167,119 @@ def merge(existing, api_items):
     new_pharmacies = []
 
     result = []
-    for key, ex in ex_lookup.items():
-        merged = dict(ex)
-        if key in api_lookup:
+    for key, current in existing_lookup.items():
+        merged = dict(current)
+        api = api_lookup.get(key)
+        if api:
             matched += 1
-            api = api_lookup[key]
-            # 좌표 없으면 API에서 가져오기
             if merged.get("lat") is None or merged.get("lng") is None:
                 lat, lng = get_coord(api)
-                if lat and lng:
+                if lat is not None and lng is not None:
                     merged["lat"] = lat
                     merged["lng"] = lng
                     coord_updated += 1
-            # 전화번호 없으면 업데이트
             if not merged.get("phone") and api.get("telno"):
                 merged["phone"] = api.get("telno", "")
                 phone_updated += 1
         else:
-            possibly_closed.append({"name": ex["name"], "address": ex["address"]})
+            possibly_closed.append({"name": current.get("name", ""), "address": current.get("address", "")})
         result.append(merged)
 
-    # 신규 약국 (API에만 있는 것)
     for key, api in api_lookup.items():
-        if key not in ex_lookup:
-            name = api.get("yadmNm", "")
-            addr = api.get("addr", "")
-            if not name:
-                continue
-            addr_parts = addr.split(" ")
-            lat, lng = get_coord(api)
-            new_pharmacies.append({
-                "name": name,
-                "address": addr,
-                "phone": api.get("telno", ""),
-                "market_type": "",
-                "color": "#888888",
-                "branch": "",
-                "region": addr_parts[0] if addr_parts else "",
-                "district": addr_parts[1] if len(addr_parts) > 1 else "",
-                "manager": "",
-                "is_trading": False,
-                "lat": lat,
-                "lng": lng,
-                "claimed_by": None,
-                "claimed_at": None,
-            })
+        if key in existing_lookup:
+            continue
+        name = api.get("yadmNm", "")
+        addr = api.get("addr", "")
+        if not name or not addr:
+            continue
+        addr_parts = addr.split()
+        lat, lng = get_coord(api)
+        new_pharmacies.append({
+            "name": name,
+            "address": addr,
+            "phone": api.get("telno", ""),
+            "market_type": "",
+            "color": "#888888",
+            "branch": "",
+            "region": addr_parts[0] if addr_parts else "",
+            "district": addr_parts[1] if len(addr_parts) > 1 else "",
+            "manager": "",
+            "is_trading": False,
+            "lat": lat,
+            "lng": lng,
+            "claimed_by": None,
+            "claimed_at": None,
+            "review_status": "pending",
+            "active": True,
+        })
 
-    print(f"  ✅ 기존 매칭: {matched}개")
-    print(f"  📍 좌표 업데이트: {coord_updated}개")
-    print(f"  📞 전화번호 업데이트: {phone_updated}개")
-    print(f"  ⚠️  API 미존재 (폐업 의심): {len(possibly_closed)}개")
-    print(f"  🆕 신규 발견: {len(new_pharmacies)}개 (담당자 배정 필요)")
-
+    print(f"  matched existing: {matched:,}")
+    print(f"  coordinates updated: {coord_updated:,}")
+    print(f"  phone numbers updated: {phone_updated:,}")
+    print(f"  possibly closed: {len(possibly_closed):,}")
+    print(f"  new pharmacies found: {len(new_pharmacies):,}")
     return result, new_pharmacies, possibly_closed
 
-def save_html(content, merged_data):
-    """HTML 파일에 새 데이터 삽입"""
+
+def save_pharmacy_data(original_content, merged_data):
     json_str = json.dumps(merged_data, ensure_ascii=False, separators=(",", ":"))
     new_content = re.sub(
-        r'const PHARMACY_DATA = \[.*?\];',
-        f'const PHARMACY_DATA = {json_str};',
-        content, flags=re.DOTALL
+        r"const\s+PHARMACY_DATA\s*=\s*\[.*\];\s*$",
+        f"const PHARMACY_DATA = {json_str};\n",
+        original_content,
+        flags=re.DOTALL,
     )
-    with open(GAME_FILE, "w", encoding="utf-8") as f:
-        f.write(new_content)
-    print(f"  ✅ 저장 완료: {GAME_FILE} ({len(merged_data)}개)")
+    DATA_FILE.write_text(new_content, encoding="utf-8")
+    print(f"  saved: {DATA_FILE} ({len(merged_data):,} rows)")
+
 
 def save_report(new_pharmacies, possibly_closed):
-    """신규/폐업 보고서 저장"""
     report = {
         "new_pharmacies_count": len(new_pharmacies),
         "possibly_closed_count": len(possibly_closed),
         "new_pharmacies": new_pharmacies,
         "possibly_closed": possibly_closed,
     }
-    with open("update_report.json", "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
-    print(f"  📄 보고서 저장: update_report.json")
+    REPORT_FILE.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"  saved: {REPORT_FILE}")
 
-# ===== 실행 =====
-print("=" * 55)
-print("  심평원 약국정보 API → 게임 데이터 업데이터")
-print("=" * 55)
 
-# 1. API 연결 확인
-print("\n[1] API 연결 확인...")
-test = fetch_page(1, 3)
-if not test:
-    print("❌ API 연결 실패")
-    exit(1)
-total_count = test["response"]["body"]["totalCount"]
-print(f"  ✅ 연결 성공! 전국 약국 총 {total_count:,}개")
+def main():
+    print("=" * 55)
+    print("  Pharmacy data updater")
+    print("=" * 55)
 
-# 2. 기존 데이터 로드
-print("\n[2] 기존 게임 데이터 로드...")
-existing, html_content = load_game_data()
+    print("\n[1] Checking API connection...")
+    test = fetch_page(1, 3)
+    if not test:
+        print("API connection failed")
+        return 1
+    total_count = test["response"]["body"].get("totalCount")
+    print(f"  API connection OK. totalCount={total_count}")
 
-# 3. API 전체 수집
-print(f"\n[3] 지역별 API 데이터 수집 ({len(SIDO_CODES)}개 지역)...")
-api_items = fetch_all_by_region()
-print(f"\n  총 수집: {len(api_items):,}개")
+    print("\n[2] Loading current pharmacy_data.js...")
+    existing, data_content = load_pharmacy_data()
 
-# 4. 병합
-merged, new_pharmacies, possibly_closed = merge(existing, api_items)
+    print(f"\n[3] Fetching public API data ({len(SIDO_CODES)} regions)...")
+    api_items = fetch_all_by_region()
+    print(f"\n  fetched total: {len(api_items):,}")
 
-# 5. 보고서 저장
-print("\n[4] 보고서 저장...")
-save_report(new_pharmacies, possibly_closed)
+    print("\n[4] Merging...")
+    merged, new_pharmacies, possibly_closed = merge(existing, api_items)
 
-# 6. HTML 업데이트
-print("\n[5] 게임 파일 업데이트...")
-save_html(html_content, merged)
+    print("\n[5] Saving report...")
+    save_report(new_pharmacies, possibly_closed)
 
-print("\n" + "=" * 55)
-print("  완료!")
-print(f"  - 기존 데이터(좌표/전화번호 업데이트) 반영")
-print(f"  - 신규 약국 {len(new_pharmacies)}개 → update_report.json 확인")
-print(f"  - 폐업 의심 {len(possibly_closed)}개 → update_report.json 확인")
-print("=" * 55)
+    print("\n[6] Saving pharmacy_data.js...")
+    save_pharmacy_data(data_content, merged)
+
+    print("\nDone.")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except RuntimeError as exc:
+        print(f"Setup error: {exc}")
+        sys.exit(1)
