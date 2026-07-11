@@ -188,6 +188,52 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 13px;
         }
+        .rank-row.clickable {
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 7px 6px;
+            margin: 0 -6px;
+            transition: background .18s, transform .18s;
+        }
+        .rank-row.clickable:hover,
+        .rank-row.clickable.active {
+            background: rgba(255,255,255,0.08);
+        }
+        .rank-list {
+            margin: 2px 0 10px 28px;
+            border-left: 2px solid rgba(255,255,255,0.12);
+            padding-left: 8px;
+        }
+        .rank-pharmacy-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.045);
+            color: #E5E7EB;
+            border-radius: 8px;
+            padding: 7px 8px;
+            margin: 5px 0;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .rank-pharmacy-item strong {
+            display: block;
+            font-size: 12px;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .rank-pharmacy-item span {
+            display: block;
+            font-size: 10px;
+            color: #9CA3AF;
+            line-height: 1.35;
+        }
+        .rank-list-more {
+            font-size: 10px;
+            color: #94A3B8;
+            padding: 4px 2px 0;
+        }
         .rank-num { width: 20px; font-weight: 700; color: #e94560; }
         .rank-badge {
             width: 12px; height: 12px;
@@ -1429,6 +1475,7 @@ let pharmacyMarkers = [];
 let currentFilter = 'all';
 let activeSearchIndexes = null;
 let activeSearchTerm = '';
+let selectedLeaderboardPlayer = null;
 let currentViewMode = 'all';
 let panelOpen = true;
 let map;
@@ -1997,23 +2044,84 @@ function updateLeaderboard() {
     const lb = document.getElementById('leaderboard');
 
     if (sorted.length === 0) {
+        selectedLeaderboardPlayer = null;
         lb.innerHTML = '<div style="color:#555;font-size:13px;text-align:center;padding:20px;">아직 점령한 팀이 없습니다</div>';
         return;
+    }
+    if (selectedLeaderboardPlayer && !scores[selectedLeaderboardPlayer]) {
+        selectedLeaderboardPlayer = null;
     }
 
     const medals = ['🥇', '🥈', '🥉'];
     lb.innerHTML = sorted.map(([name, count], i) => {
         const player = gameState.players[name] || { color: '#aaa' };
         const isMe = name === gameState.currentPlayer;
+        const isSelected = name === selectedLeaderboardPlayer;
         const pct = ((count / PHARMACY_DATA.length) * 100).toFixed(1);
-        return `<div class="rank-row${isMe ? ' ' : ''}" style="${isMe ? 'background:rgba(255,255,255,0.06);border-radius:8px;padding:6px 4px;margin:-2px 0;' : ''}">
+        return `<div class="rank-row clickable${isSelected ? ' active' : ''}" onclick="toggleLeaderboardPlayer('${escapeJsString(name)}')" title="점령 약국 목록 보기" style="${isMe ? 'background:rgba(255,255,255,0.06);' : ''}">
             <span class="rank-num">${medals[i] || (i+1)}</span>
             <span class="rank-badge" style="background:${player.color};"></span>
             <span class="rank-name">${formatPlayerName(name)}${isMe ? ' <span style="font-size:10px;color:#e94560;">(나)</span>' : ''}</span>
-            <span class="rank-count">${count}개 (${pct}%)</span>
-        </div>`;
+            <span class="rank-count">${count}개 (${pct}%) ${isSelected ? '⌃' : '⌄'}</span>
+        </div>${isSelected ? renderLeaderboardPharmacyList(name) : ''}`;
     }).join('');
 }
+
+function escapeJsString(value) {
+    return String(value == null ? '' : value)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r');
+}
+
+function getClaimedPharmaciesByPlayer(playerName) {
+    return getClaimedStateEntries()
+        .filter(([, s]) => s.claimed_by === playerName)
+        .map(([key, state]) => {
+            const idx = getPharmacyIndexByKey(key);
+            const p = idx >= 0 ? PHARMACY_DATA[idx] : null;
+            return p ? { idx, p, state } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+            const at = String(a.state.claimed_at || '');
+            const bt = String(b.state.claimed_at || '');
+            if (bt !== at) return bt.localeCompare(at);
+            return String(a.p.name || '').localeCompare(String(b.p.name || ''), 'ko');
+        });
+}
+
+function renderLeaderboardPharmacyList(playerName) {
+    const rows = getClaimedPharmaciesByPlayer(playerName);
+    if (rows.length === 0) {
+        return '<div class="rank-list"><div class="rank-list-more">점령한 약국이 없습니다.</div></div>';
+    }
+    const shown = rows.slice(0, 30);
+    const html = shown.map(({idx, p}) => {
+        const regionText = [p.region, p.district, p.dong].filter(Boolean).join(' ');
+        const priority = p.priority_target ? '⭐ ' : '';
+        return `<button type="button" class="rank-pharmacy-item" onclick="event.stopPropagation(); focusLeaderboardPharmacy(${idx});">
+            <strong>${priority}${escapeSearchHtml(p.name || '-')}</strong>
+            <span>${escapeSearchHtml(regionText || p.address || '-')}</span>
+        </button>`;
+    }).join('');
+    const more = rows.length > shown.length ? `<div class="rank-list-more">외 ${rows.length - shown.length}개 더 있음. 지도를 확대하거나 검색으로 확인하세요.</div>` : '';
+    return `<div class="rank-list">${html}${more}</div>`;
+}
+
+window.toggleLeaderboardPlayer = function(playerName) {
+    selectedLeaderboardPlayer = selectedLeaderboardPlayer === playerName ? null : playerName;
+    updateLeaderboard();
+};
+
+window.focusLeaderboardPharmacy = function(idx) {
+    if (typeof selectSearchResult === 'function') {
+        selectSearchResult(idx);
+    } else if (typeof showPopup === 'function') {
+        showPopup(idx);
+    }
+};
 
 function updateMyStats() {
     if (!gameState.currentPlayer && !window._isMasterAdmin) return;
