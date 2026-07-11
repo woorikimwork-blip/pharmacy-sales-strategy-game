@@ -927,6 +927,209 @@
             #toast.show { transform: translateY(0); }
         }
 
+
+
+        /* Mobile field-use overrides */
+        #mobile-search-dock { display: none; }
+
+        @media (max-width: 768px) {
+            #topbar {
+                min-height: 52px !important;
+                padding: 7px 10px !important;
+                gap: 6px !important;
+                align-items: center !important;
+            }
+            #topbar h1 {
+                flex: 1 1 auto !important;
+                min-width: 150px;
+                font-size: 15px !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            #topbar > div:nth-child(2),
+            #topbar button[onclick="exportData()"] {
+                display: none !important;
+            }
+            #topbar > div:last-child {
+                width: auto !important;
+                display: flex !important;
+                grid-template-columns: none !important;
+                gap: 6px !important;
+                margin-left: auto;
+            }
+            #current-player-badge,
+            #my-score-badge {
+                min-height: 34px !important;
+                padding: 6px 9px !important;
+                font-size: 11px !important;
+                max-width: 47vw;
+            }
+            #cur-name {
+                max-width: 32vw;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            #map {
+                margin-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+            }
+            #mobile-search-dock {
+                position: fixed;
+                left: 10px;
+                right: 10px;
+                bottom: calc(10px + env(safe-area-inset-bottom));
+                z-index: 1180;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 58px 54px;
+                gap: 7px;
+                padding: 8px;
+                background: rgba(15, 23, 42, 0.94);
+                border: 1px solid rgba(148, 163, 184, 0.32);
+                border-radius: 18px;
+                box-shadow: 0 14px 38px rgba(0,0,0,0.42);
+                backdrop-filter: blur(14px);
+            }
+            body.mobile-panel-open #mobile-search-dock,
+            body.setup-active #mobile-search-dock {
+                display: none;
+            }
+            #mobile-search-input {
+                min-width: 0;
+                height: 48px;
+                border-radius: 13px;
+                border: 1px solid rgba(255,255,255,0.2);
+                background: rgba(255,255,255,0.08);
+                color: #fff;
+                padding: 0 13px;
+                font-size: 16px;
+                font-family: inherit;
+                outline: none;
+            }
+            #mobile-search-input::placeholder { color: rgba(226,232,240,0.62); }
+            #mobile-search-dock button {
+                min-height: 48px;
+                border-radius: 13px;
+                border: 1px solid rgba(255,255,255,0.16);
+                color: #fff;
+                background: #e94560;
+                font-size: 13px;
+                font-weight: 900;
+                font-family: inherit;
+                cursor: pointer;
+            }
+            #mobile-search-dock button:last-child {
+                background: rgba(74,171,219,0.22);
+                border-color: rgba(74,171,219,0.55);
+                color: #BAE6FD;
+            }
+            #side-panel {
+                max-height: 72vh !important;
+                max-height: 72svh !important;
+                padding-bottom: calc(18px + env(safe-area-inset-bottom));
+                border-radius: 20px 20px 0 0 !important;
+                z-index: 1160 !important;
+            }
+            #side-panel.hidden {
+                transform: translateY(112%) !important;
+            }
+            #panel-toggle {
+                display: none;
+                top: auto !important;
+                right: 12px !important;
+                bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+                min-width: 56px !important;
+                min-height: 44px !important;
+                padding: 8px 12px !important;
+                border-radius: 999px !important;
+                font-size: 13px !important;
+                z-index: 1205 !important;
+                transform: none !important;
+            }
+            #panel-toggle.open {
+                display: block;
+                right: 12px !important;
+                bottom: calc(72vh - 50px + env(safe-area-inset-bottom)) !important;
+                bottom: calc(72vh - 50px + env(safe-area-inset-bottom)) !important;
+                bottom: calc(72svh - 50px + env(safe-area-inset-bottom)) !important;
+            }
+            .panel-section {
+                padding: 14px 16px !important;
+            }
+            #side-panel .panel-section:nth-child(2) {
+                position: sticky;
+                top: 0;
+                z-index: 5;
+                padding-top: 12px !important;
+            }
+            #side-panel .panel-section:nth-child(n+4) {
+                padding-top: 12px !important;
+            }
+            #search-input {
+                min-height: 48px !important;
+                font-size: 16px !important;
+            }
+            #search-input + button {
+                min-width: 66px !important;
+                min-height: 48px !important;
+            }
+            #search-results {
+                max-height: 42vh !important;
+            }
+            #search-results > div[onclick] {
+                min-height: 64px;
+                padding: 11px 12px !important;
+            }
+            .chip-row {
+                scroll-snap-type: x proximity;
+                padding-bottom: 10px !important;
+            }
+            .chip, .branch-chip {
+                min-height: 42px !important;
+                scroll-snap-align: start;
+            }
+            .leaflet-control-zoom {
+                margin-top: 8px !important;
+            }
+            .leaflet-control-zoom a {
+                width: 44px !important;
+                height: 44px !important;
+                line-height: 42px !important;
+            }
+            .leaflet-popup-content-wrapper {
+                max-width: calc(100vw - 22px) !important;
+            }
+            .leaflet-popup-content {
+                width: min(350px, calc(100vw - 34px)) !important;
+            }
+            .claim-popup {
+                padding: 16px !important;
+            }
+            .claim-popup .pharmacy-name {
+                font-size: 17px !important;
+                line-height: 1.3 !important;
+            }
+            .claim-popup .pharmacy-meta {
+                font-size: 12px !important;
+                line-height: 1.45 !important;
+            }
+            .claim-btn,
+            .trade-btn {
+                min-height: 52px !important;
+                font-size: 15px !important;
+            }
+            #toast {
+                bottom: calc(86px + env(safe-area-inset-bottom)) !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            #topbar h1 { font-size: 14px !important; min-width: 132px; }
+            #current-player-badge { display: none !important; }
+            #mobile-search-dock { grid-template-columns: minmax(0, 1fr) 54px 50px; gap: 6px; }
+            #mobile-search-dock button { font-size: 12px; }
+        }
+
     </style>
 
 
@@ -941,7 +1144,7 @@
       window.dispatchEvent(new CustomEvent('FirebaseModuleLoaded'));
     </script>
 </head>
-<body>
+<body class="setup-active">
 
 <!-- TOP BAR -->
 <div id="topbar">
@@ -975,6 +1178,12 @@
 
 <!-- MAP -->
 <div id="map"></div>
+<!-- MOBILE QUICK SEARCH -->
+<div id="mobile-search-dock" aria-label="Mobile quick pharmacy search">
+    <input type="text" id="mobile-search-input" placeholder="&#50557;&#44397;&#47749;&middot;&#44396;&middot;&#46041; &#44160;&#49353;" autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter') mobileSearchPharmacy()">
+    <button type="button" onclick="mobileSearchPharmacy()">&#44160;&#49353;</button>
+    <button type="button" onclick="openMobileFilters()">&#54596;&#53552;</button>
+</div>
 
 <!-- SETUP PANEL -->
 <div id="setup-panel">
@@ -1208,11 +1417,13 @@ function saveState() {
 // =================== SETUP ===================
 function showSetup() {
     document.getElementById('setup-panel').style.display = 'flex';
+    document.body.classList.add('setup-active');
     updateExistingPlayers();
 }
 
 function hideSetup() {
     document.getElementById('setup-panel').style.display = 'none';
+    document.body.classList.remove('setup-active');
 }
 
 function updateExistingPlayers() {
@@ -1866,16 +2077,51 @@ function togglePanel() {
     setPanelOpen(!panelOpen);
 }
 
+function isMobileViewport() {
+    return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+}
+
 function setPanelOpen(open) {
     panelOpen = open;
     const panel = document.getElementById('side-panel');
     const btn = document.getElementById('panel-toggle');
     if (!panel || !btn) return;
+    const mobile = isMobileViewport();
     panel.classList.toggle('hidden', !panelOpen);
     panel.classList.toggle('open', panelOpen);
-    btn.textContent = panelOpen ? '검색/필터 닫기' : '검색/필터 열기';
+    btn.textContent = mobile ? (panelOpen ? '\uB2EB\uAE30' : '\uD544\uD130') : (panelOpen ? '\uAC80\uC0C9/\uD544\uD130 \uB2EB\uAE30' : '\uAC80\uC0C9/\uD544\uD130 \uC5F4\uAE30');
     btn.classList.toggle('open', panelOpen);
+    document.body.classList.toggle('mobile-panel-open', mobile && panelOpen);
+    setTimeout(() => { if (map && typeof map.invalidateSize === 'function') map.invalidateSize(); }, 280);
 }
+
+window.addEventListener('resize', function() {
+    if (typeof setPanelOpen === 'function') setPanelOpen(panelOpen);
+});
+
+function focusPanelSearch() {
+    setPanelOpen(true);
+    setTimeout(() => {
+        const input = document.getElementById('search-input');
+        if (input) input.focus();
+    }, 120);
+}
+
+window.openMobileFilters = function() {
+    setPanelOpen(true);
+    setTimeout(() => {
+        const target = document.getElementById('filter-chips') || document.getElementById('search-input');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+};
+
+window.mobileSearchPharmacy = function() {
+    const mobileInput = document.getElementById('mobile-search-input');
+    const mainInput = document.getElementById('search-input');
+    if (mobileInput && mainInput) mainInput.value = mobileInput.value;
+    if (typeof searchPharmacy === 'function') searchPharmacy();
+    if (isMobileViewport()) setPanelOpen(false);
+};
 
 // =================== EXPORT ===================
 function exportData() {
@@ -2898,6 +3144,8 @@ window.clearSearchMapFilter = function() {
     activeSearchTerm = '';
     const input = document.getElementById('search-input');
     if (input) input.value = '';
+    const mobileInput = document.getElementById('mobile-search-input');
+    if (mobileInput) mobileInput.value = '';
     const container = document.getElementById('search-results');
     if (container) container.style.display = 'none';
     refreshAllMarkers();
@@ -2905,6 +3153,8 @@ window.clearSearchMapFilter = function() {
 
 window.searchPharmacy = function() {
     const term = (document.getElementById('search-input').value || '').trim();
+    const mobileInput = document.getElementById('mobile-search-input');
+    if (mobileInput && mobileInput.value.trim() !== term) mobileInput.value = term;
     if (!term) {
         clearSearchMapFilter();
         return;
@@ -2991,6 +3241,8 @@ window.selectSearchResult = function(idx, options = {}) {
 window.showSearchSuggestions = function() {
     const term = (document.getElementById('search-input').value || '').trim();
     const container = document.getElementById('search-results');
+    const mobileInput = document.getElementById('mobile-search-input');
+    if (mobileInput && mobileInput.value.trim() !== term) mobileInput.value = term;
     if (term.length < 1) {
         activeSearchIndexes = null;
         activeSearchTerm = '';
