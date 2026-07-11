@@ -3126,15 +3126,47 @@ window.updateLeaderboard = function() {
 function normalizeSearchText(value) {
     return String(value || '')
         .toLowerCase()
-        .replace(/[\s,._\-()\[\]{}\u00B7\/]/g, '');
+        .replace(/[\s,._\-+&|()\[\]{}\u00B7\/]/g, '');
 }
 
 function splitSearchTerms(value) {
-    return String(value || '')
+    const raw = String(value || '')
         .toLowerCase()
-        .split(/[\s,._\-()\[\]{}\u00B7\/]+/)
+        .trim();
+    const parts = raw
+        .split(/[\s,._\-+&|()\[\]{}\u00B7\/]+/)
         .map(t => t.trim())
         .filter(Boolean);
+    if (parts.length > 1) return parts;
+
+    const compact = normalizeSearchText(raw);
+    if (!compact) return [];
+
+    const adminTokens = extractSearchAdminTokens(compact);
+    return adminTokens.length > 1 ? adminTokens : [compact];
+}
+
+function extractSearchAdminTokens(compact) {
+    const text = normalizeSearchText(compact);
+    if (!text) return [];
+
+    const pattern = /[0-9a-z\uAC00-\uD7A3]+?(\uD2B9\uBCC4\uC790\uCE58\uC2DC|\uD2B9\uBCC4\uC790\uCE58\uB3C4|\uD2B9\uBCC4\uC2DC|\uAD11\uC5ED\uC2DC|\uC790\uCE58\uB3C4|\uB3C4|\uC2DC|\uAD70|\uAD6C|\uC74D|\uBA74|\uB3D9|\uAC00|\uB9AC)/g;
+    const tokens = [];
+    let lastEnd = 0;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+        if (match.index > lastEnd) {
+            const between = text.slice(lastEnd, match.index);
+            if (between.length >= 2) tokens.push(between);
+        }
+        tokens.push(match[0]);
+        lastEnd = pattern.lastIndex;
+    }
+    if (lastEnd < text.length) {
+        const tail = text.slice(lastEnd);
+        if (tail.length >= 2) tokens.push(tail);
+    }
+    return [...new Set(tokens.filter(Boolean))];
 }
 
 function escapeSearchHtml(value) {
@@ -3188,15 +3220,25 @@ function getSearchCandidates(value) {
     const compact = normalizeSearchText(value);
     if (!compact) return [];
     const candidates = [compact];
+    const withoutAdminSuffix = compact.replace(/(\uD2B9\uBCC4\uC790\uCE58\uC2DC|\uD2B9\uBCC4\uC790\uCE58\uB3C4|\uD2B9\uBCC4\uC2DC|\uAD11\uC5ED\uC2DC|\uC790\uCE58\uB3C4|\uB3C4|\uC2DC)$/, '');
+    if (withoutAdminSuffix && withoutAdminSuffix !== compact) candidates.push(withoutAdminSuffix);
     Object.values(REGION_SEARCH_ALIASES).forEach(names => {
         const normalizedNames = names.map(normalizeSearchText);
-        if (normalizedNames.includes(compact)) candidates.push(...normalizedNames);
+        if (normalizedNames.includes(compact) || normalizedNames.includes(withoutAdminSuffix)) candidates.push(...normalizedNames);
     });
     return [...new Set(candidates.filter(Boolean))];
 }
 
 function includesAnySearchCandidate(value, candidates) {
     return candidates.some(candidate => value.includes(candidate));
+}
+
+function matchesAllSearchTerms(haystack, terms) {
+    if (!terms.length) return false;
+    return terms.every(term => {
+        const candidates = getSearchCandidates(term);
+        return candidates.some(candidate => haystack.includes(candidate));
+    });
 }
 
 function getSearchStatus(row) {
@@ -3210,7 +3252,7 @@ function getSearchStatus(row) {
 function buildSearchRows(term) {
     const raw = String(term || '').trim();
     const compact = normalizeSearchText(raw);
-    const terms = splitSearchTerms(raw).map(normalizeSearchText);
+    const terms = splitSearchTerms(raw).map(normalizeSearchText).filter(Boolean);
     const compactCandidates = getSearchCandidates(raw);
     if (!compact) return [];
 
@@ -3225,21 +3267,20 @@ function buildSearchRows(term) {
         const phone = normalizeSearchText(p.phone);
         const regionFields = [address, region, district, dong];
         const haystack = [name, ...regionFields, branch, phone].join('|');
-        const termMatched = terms.length > 1 && terms.every(t => {
-            const candidates = getSearchCandidates(t);
-            return candidates.some(candidate => haystack.includes(candidate));
-        });
+        const termMatched = terms.length > 1 && matchesAllSearchTerms(haystack, terms);
         const regionMatched = regionFields.some(field => includesAnySearchCandidate(field, compactCandidates));
 
         let score = 0;
         let matchType = '';
-        if (name === compact) { score = 120; matchType = '\uC57D\uAD6D\uBA85 \uC815\uD655\uC77C\uCE58'; }
+        if (termMatched && terms.some(t => name.includes(t)) && terms.some(t => regionFields.join('|').includes(t))) { score = 88; matchType = '\uC9C0\uC5ED+\uC57D\uAD6D\uBA85 \uC870\uD569'; }
+        else if (termMatched) { score = 82; matchType = '\uB2E4\uC911 \uD0A4\uC6CC\uB4DC \uC77C\uCE58'; }
+        else if (name === compact) { score = 120; matchType = '\uC57D\uAD6D\uBA85 \uC815\uD655\uC77C\uCE58'; }
         else if (name.startsWith(compact)) { score = 90; matchType = '\uC57D\uAD6D\uBA85 \uC55E\uC77C\uCE58'; }
         else if (name.includes(compact)) { score = 75; matchType = '\uC57D\uAD6D\uBA85 \uD3EC\uD568'; }
         else if (dong && includesAnySearchCandidate(dong, compactCandidates)) { score = 68; matchType = '\uB3D9 \uC77C\uCE58'; }
         else if (district && includesAnySearchCandidate(district, compactCandidates)) { score = 64; matchType = '\uAD6C/\uAD70 \uC77C\uCE58'; }
         else if (region && includesAnySearchCandidate(region, compactCandidates)) { score = 60; matchType = '\uC2DC/\uB3C4 \uC77C\uCE58'; }
-        else if (regionMatched || termMatched) { score = 55; matchType = '\uC9C0\uC5ED/\uC8FC\uC18C \uC77C\uCE58'; }
+        else if (regionMatched) { score = 55; matchType = '\uC9C0\uC5ED/\uC8FC\uC18C \uC77C\uCE58'; }
         else if (phone && phone.includes(compact)) { score = 40; matchType = '\uC804\uD654\uBC88\uD638 \uC77C\uCE58'; }
         if (!score) return null;
 
