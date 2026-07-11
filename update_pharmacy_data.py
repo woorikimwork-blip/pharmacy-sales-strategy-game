@@ -28,23 +28,23 @@ SERVICE_KEY_ENV = "PUBLIC_DATA_SERVICE_KEY"
 BASE_URL = "http://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList"
 
 SIDO_CODES = {
-    "110000": "?????",
-    "210000": "?????",
-    "220000": "?????",
-    "230000": "?????",
-    "240000": "?????",
-    "250000": "?????",
-    "260000": "?????",
-    "290000": "???????",
-    "310000": "???",
-    "320000": "???????",
-    "330000": "????",
-    "340000": "????",
-    "350000": "???????",
-    "360000": "????",
-    "370000": "????",
-    "380000": "????",
-    "390000": "???????",
+    "110000": "서울특별시",
+    "210000": "부산광역시",
+    "220000": "대구광역시",
+    "230000": "인천광역시",
+    "240000": "광주광역시",
+    "250000": "대전광역시",
+    "260000": "울산광역시",
+    "290000": "세종특별자치시",
+    "310000": "경기도",
+    "320000": "강원특별자치도",
+    "330000": "충청북도",
+    "340000": "충청남도",
+    "350000": "전북특별자치도",
+    "360000": "전라남도",
+    "370000": "경상북도",
+    "380000": "경상남도",
+    "390000": "제주특별자치도",
 }
 
 PRESERVED_FIELDS = {
@@ -54,6 +54,7 @@ PRESERVED_FIELDS = {
     "branch",
     "region",
     "district",
+    "dong",
     "manager",
     "is_trading",
     "claimed_by",
@@ -192,6 +193,24 @@ def split_region(addr):
     return (parts[0] if parts else "", parts[1] if len(parts) > 1 else "")
 
 
+def extract_dong(addr):
+    text = str(addr or "")
+    suffixes = ("\ub3d9", "\uac00", "\uc74d", "\uba74", "\ub9ac")
+
+    for group in re.findall(r"\(([^)]*)\)", text):
+        for token in re.split(r"[\s,]+", group):
+            cleaned = re.sub(r"[^0-9A-Za-z\uac00-\ud7a3]", "", token)
+            if cleaned.endswith(suffixes):
+                return cleaned
+
+    found = []
+    for token in re.split(r"\s+", text):
+        cleaned = re.sub(r"[^0-9A-Za-z\uac00-\ud7a3]", "", token)
+        if cleaned.endswith(suffixes):
+            found.append(cleaned)
+    return found[-1] if found else ""
+
+
 def get_coord(item):
     for y_key, x_key in [("YPos", "XPos"), ("yPos", "xPos"), ("latitude", "longitude"), ("lat", "lon")]:
         y = item.get(y_key)
@@ -218,6 +237,7 @@ def api_to_candidate(api):
         "branch": "",
         "region": region,
         "district": district,
+        "dong": extract_dong(address),
         "manager": "",
         "is_trading": False,
         "lat": lat,
@@ -299,6 +319,7 @@ def merge_for_review(existing, api_items):
         new_pharmacies.append(row_summary(candidate) | {
             "region": candidate.get("region", ""),
             "district": candidate.get("district", ""),
+            "dong": candidate.get("dong", ""),
             "lat": candidate.get("lat"),
             "lng": candidate.get("lng"),
             "review_status": "new_pending",

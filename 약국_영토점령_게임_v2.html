@@ -1083,7 +1083,7 @@
     <div class="panel-section" style="padding-top:12px; padding-bottom:4px;">
         <h3 style="margin-bottom:8px;">🔎 약국 검색</h3>
         <div style="display:flex; gap:6px;">
-            <input type="text" id="search-input" placeholder="&#50557;&#44397;&#47749;&middot;&#51648;&#50669;&middot;&#51452;&#49548; &#51077;&#47141;" oninput="showSearchSuggestions()" onkeydown="if(event.key==='Enter') searchPharmacy()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid #555; border-radius:6px; padding:6px 10px; color:#fff; font-size:13px; font-family:inherit;">
+            <input type="text" id="search-input" placeholder="&#50557;&#44397;&#47749;&middot;&#49884;/&#46020;&middot;&#44396;&middot;&#46041; &#44160;&#49353;" oninput="showSearchSuggestions()" onkeydown="if(event.key==='Enter') searchPharmacy()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid #555; border-radius:6px; padding:6px 10px; color:#fff; font-size:13px; font-family:inherit;">
             <button onclick="searchPharmacy()" style="padding:6px 12px; background:#4AABDB; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px;">검색</button>
         </div>
         <div id="search-results" style="max-height:200px; overflow-y:auto; margin-top:4px; display:none;"></div>
@@ -2741,13 +2741,57 @@ function escapeSearchHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-function getPharmacyDong(address) {
-    const text = String(address || '');
-    const paren = text.match(/\(([^)]*[\uAC00-\uD7A3]+[\uB3D9\uAC00-\uD7A3]*)\)/);
-    if (paren && paren[1]) return paren[1].split(',')[0].trim();
-    const tokens = text.split(/\s+/);
-    const found = tokens.find(t => /[\uAC00-\uD7A3]+(\uB3D9|\uAC00|\uB85C|\uBA74|\uC74D)$/.test(t));
-    return found || '';
+function getPharmacyDong(value) {
+    if (value && typeof value === 'object') {
+        if (value.dong) return value.dong;
+        value = value.address;
+    }
+    const text = String(value || '');
+    const suffixPattern = /[\uAC00-\uD7A3]+(\uB3D9|\uAC00|\uC74D|\uBA74|\uB9AC)$/;
+    const parenGroups = text.match(/\([^)]*\)/g) || [];
+    for (const group of parenGroups) {
+        const tokens = group.replace(/[()]/g, '').split(/[\s,]+/);
+        const found = tokens.map(t => t.replace(/[^0-9A-Za-z\uAC00-\uD7A3]/g, '')).find(t => suffixPattern.test(t));
+        if (found) return found;
+    }
+    const tokens = text.split(/\s+/).map(t => t.replace(/[^0-9A-Za-z\uAC00-\uD7A3]/g, ''));
+    const found = tokens.filter(t => suffixPattern.test(t));
+    return found[found.length - 1] || '';
+}
+
+const REGION_SEARCH_ALIASES = {
+    '\uC11C\uC6B8': ['\uC11C\uC6B8', '\uC11C\uC6B8\uD2B9\uBCC4\uC2DC'],
+    '\uBD80\uC0B0': ['\uBD80\uC0B0', '\uBD80\uC0B0\uAD11\uC5ED\uC2DC'],
+    '\uB300\uAD6C': ['\uB300\uAD6C', '\uB300\uAD6C\uAD11\uC5ED\uC2DC'],
+    '\uC778\uCC9C': ['\uC778\uCC9C', '\uC778\uCC9C\uAD11\uC5ED\uC2DC'],
+    '\uAD11\uC8FC': ['\uAD11\uC8FC', '\uAD11\uC8FC\uAD11\uC5ED\uC2DC'],
+    '\uB300\uC804': ['\uB300\uC804', '\uB300\uC804\uAD11\uC5ED\uC2DC'],
+    '\uC6B8\uC0B0': ['\uC6B8\uC0B0', '\uC6B8\uC0B0\uAD11\uC5ED\uC2DC'],
+    '\uC138\uC885': ['\uC138\uC885', '\uC138\uC885\uD2B9\uBCC4\uC790\uCE58\uC2DC'],
+    '\uACBD\uAE30': ['\uACBD\uAE30', '\uACBD\uAE30\uB3C4'],
+    '\uAC15\uC6D0': ['\uAC15\uC6D0', '\uAC15\uC6D0\uB3C4', '\uAC15\uC6D0\uD2B9\uBCC4\uC790\uCE58\uB3C4'],
+    '\uCDA9\uBD81': ['\uCDA9\uBD81', '\uCDA9\uCCAD\uBD81\uB3C4'],
+    '\uCDA9\uB0A8': ['\uCDA9\uB0A8', '\uCDA9\uCCAD\uB0A8\uB3C4'],
+    '\uC804\uBD81': ['\uC804\uBD81', '\uC804\uB77C\uBD81\uB3C4', '\uC804\uBD81\uD2B9\uBCC4\uC790\uCE58\uB3C4'],
+    '\uC804\uB0A8': ['\uC804\uB0A8', '\uC804\uB77C\uB0A8\uB3C4'],
+    '\uACBD\uBD81': ['\uACBD\uBD81', '\uACBD\uC0C1\uBD81\uB3C4'],
+    '\uACBD\uB0A8': ['\uACBD\uB0A8', '\uACBD\uC0C1\uB0A8\uB3C4'],
+    '\uC81C\uC8FC': ['\uC81C\uC8FC', '\uC81C\uC8FC\uB3C4', '\uC81C\uC8FC\uD2B9\uBCC4\uC790\uCE58\uB3C4']
+};
+
+function getSearchCandidates(value) {
+    const compact = normalizeSearchText(value);
+    if (!compact) return [];
+    const candidates = [compact];
+    Object.values(REGION_SEARCH_ALIASES).forEach(names => {
+        const normalizedNames = names.map(normalizeSearchText);
+        if (normalizedNames.includes(compact)) candidates.push(...normalizedNames);
+    });
+    return [...new Set(candidates.filter(Boolean))];
+}
+
+function includesAnySearchCandidate(value, candidates) {
+    return candidates.some(candidate => value.includes(candidate));
 }
 
 function getSearchStatus(row) {
@@ -2762,6 +2806,7 @@ function buildSearchRows(term) {
     const raw = String(term || '').trim();
     const compact = normalizeSearchText(raw);
     const terms = splitSearchTerms(raw).map(normalizeSearchText);
+    const compactCandidates = getSearchCandidates(raw);
     if (!compact) return [];
 
     return PHARMACY_DATA.map((p, idx) => {
@@ -2769,24 +2814,33 @@ function buildSearchRows(term) {
         const address = normalizeSearchText(p.address);
         const region = normalizeSearchText(p.region);
         const district = normalizeSearchText(p.district);
-        const dong = normalizeSearchText(getPharmacyDong(p.address));
+        const dongText = getPharmacyDong(p);
+        const dong = normalizeSearchText(dongText);
         const branch = normalizeSearchText(p.branch);
         const phone = normalizeSearchText(p.phone);
-        const haystack = [name, address, region, district, dong, branch, phone].join('|');
-        const termMatched = terms.length > 1 && terms.every(t => haystack.includes(t));
+        const regionFields = [address, region, district, dong];
+        const haystack = [name, ...regionFields, branch, phone].join('|');
+        const termMatched = terms.length > 1 && terms.every(t => {
+            const candidates = getSearchCandidates(t);
+            return candidates.some(candidate => haystack.includes(candidate));
+        });
+        const regionMatched = regionFields.some(field => includesAnySearchCandidate(field, compactCandidates));
 
         let score = 0;
         let matchType = '';
         if (name === compact) { score = 120; matchType = '\uC57D\uAD6D\uBA85 \uC815\uD655\uC77C\uCE58'; }
         else if (name.startsWith(compact)) { score = 90; matchType = '\uC57D\uAD6D\uBA85 \uC55E\uC77C\uCE58'; }
         else if (name.includes(compact)) { score = 75; matchType = '\uC57D\uAD6D\uBA85 \uD3EC\uD568'; }
-        else if (address.includes(compact) || region.includes(compact) || district.includes(compact) || dong.includes(compact) || termMatched) { score = 55; matchType = '\uC9C0\uC5ED/\uC8FC\uC18C \uC77C\uCE58'; }
+        else if (dong && includesAnySearchCandidate(dong, compactCandidates)) { score = 68; matchType = '\uB3D9 \uC77C\uCE58'; }
+        else if (district && includesAnySearchCandidate(district, compactCandidates)) { score = 64; matchType = '\uAD6C/\uAD70 \uC77C\uCE58'; }
+        else if (region && includesAnySearchCandidate(region, compactCandidates)) { score = 60; matchType = '\uC2DC/\uB3C4 \uC77C\uCE58'; }
+        else if (regionMatched || termMatched) { score = 55; matchType = '\uC9C0\uC5ED/\uC8FC\uC18C \uC77C\uCE58'; }
         else if (phone && phone.includes(compact)) { score = 40; matchType = '\uC804\uD654\uBC88\uD638 \uC77C\uCE58'; }
         if (!score) return null;
 
         if (p.priority_target) score += 8;
         if (p.branch === currentBranch) score += 4;
-        return { p, idx, score, matchType, dong: getPharmacyDong(p.address) };
+        return { p, idx, score, matchType, dong: dongText };
     }).filter(Boolean).sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return String(a.p.name || '').localeCompare(String(b.p.name || ''), 'ko');
