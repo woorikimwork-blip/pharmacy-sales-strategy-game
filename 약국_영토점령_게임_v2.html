@@ -1162,6 +1162,8 @@ let gameState = {
 
 let pharmacyMarkers = [];
 let currentFilter = 'all';
+let activeSearchIndexes = null;
+let activeSearchTerm = '';
 let currentViewMode = 'all';
 let panelOpen = true;
 let map;
@@ -1643,6 +1645,15 @@ function refreshMarker(idx) {
         });
     }
 
+    if (activeSearchIndexes && activeSearchIndexes.has(idx)) {
+        m.setStyle({
+            color: '#FFFFFF',
+            radius: Math.max(m.options.radius || 8, 12),
+            weight: 5,
+            fillOpacity: Math.max(m.options.fillOpacity || 0.7, 0.9)
+        });
+    }
+
     applyVisibility(idx, m);
 }
 
@@ -2047,7 +2058,7 @@ async function ensureFirebaseAuth() {
         return true;
     } catch (e) {
         console.error('Firebase anonymous auth failed:', e);
-        if (typeof showToast === 'function') showToast('??? ??? ?? ?? - ?? ??? ?????.');
+        if (typeof showToast === 'function') showToast('\uC2E4\uC2DC\uAC04 \uB3D9\uAE30\uD654 \uAD8C\uD55C \uC5C6\uC74C - \uB85C\uCEEC \uBAA8\uB4DC\uB85C \uC804\uD658\uD569\uB2C8\uB2E4.');
         _gameMode = 'local';
         return false;
     }
@@ -2847,19 +2858,69 @@ function buildSearchRows(term) {
     });
 }
 
+function getVisibleSearchResults(results) {
+    return results.filter(({p, idx}) => {
+        if (!p.lat || !p.lng || !pharmacyMarkers[idx]) return false;
+        if (currentFilter === 'priority' && !p.priority_target) return false;
+        if (currentFilter !== 'all' && currentFilter !== 'priority' && p.market_type !== currentFilter) return false;
+        const state = getStateByIndex(idx);
+        if (currentViewMode === 'claimed' && !isClaimedState(state)) return false;
+        if (currentViewMode === 'unclaimed' && state) return false;
+        if (currentViewMode === 'unavailable' && !isUnavailableState(state)) return false;
+        if (typeof currentBranch !== 'undefined' && currentBranch !== 'all' && currentBranch !== '\uAE30\uD0C0' && p.branch !== currentBranch) return false;
+        return true;
+    });
+}
+
+function fitMapToSearchResults(results) {
+    if (!map) return;
+    const points = results
+        .map(({p}) => (p.lat && p.lng) ? [p.lat, p.lng] : null)
+        .filter(Boolean);
+    if (points.length === 0) return;
+    if (points.length === 1) {
+        map.flyTo(points[0], 16, {duration: 1.2});
+        return;
+    }
+    const bounds = L.latLngBounds(points);
+    map.fitBounds(bounds, {padding: [40, 40], maxZoom: 14});
+}
+
+function applySearchToMap(results, term) {
+    activeSearchTerm = String(term || '').trim();
+    activeSearchIndexes = new Set(results.map(r => r.idx));
+    refreshAllMarkers();
+    fitMapToSearchResults(getVisibleSearchResults(results));
+}
+
+window.clearSearchMapFilter = function() {
+    activeSearchIndexes = null;
+    activeSearchTerm = '';
+    const input = document.getElementById('search-input');
+    if (input) input.value = '';
+    const container = document.getElementById('search-results');
+    if (container) container.style.display = 'none';
+    refreshAllMarkers();
+};
+
 window.searchPharmacy = function() {
     const term = (document.getElementById('search-input').value || '').trim();
-    if (!term) return;
+    if (!term) {
+        clearSearchMapFilter();
+        return;
+    }
     document.getElementById('search-results').style.display = 'none';
 
     const results = buildSearchRows(term);
     if (results.length === 0) {
+        clearSearchMapFilter();
         alert("'" + term + "' \uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
         return;
     }
 
+    applySearchToMap(results, term);
     if (results.length === 1) {
-        selectSearchResult(results[0].idx);
+        selectSearchResult(results[0].idx, { keepSearch: true });
     } else {
         showSearchResultList(results, { explicit: true, term });
     }
@@ -2872,7 +2933,14 @@ function showSearchResultList(results, options = {}) {
     const limit = explicit ? (exactNameCount > 0 ? results.length : Math.min(results.length, 300)) : Math.min(results.length, 20);
     const shown = results.slice(0, limit);
     const suffix = shown.length < results.length ? ' / ' + results.length + '\uAC74 \uC911 \uC0C1\uC704 ' + shown.length + '\uAC74' : ' / ' + results.length + '\uAC74';
-    let html = '<div style="font-size:11px;color:#9CA3AF;padding:6px 2px 8px;">\uC804\uAD6D \uAC80\uC0C9 \uACB0\uACFC' + suffix + '</div>';
+    const visibleMapCount = activeSearchIndexes ? getVisibleSearchResults(results).length : null;
+    const mapSuffix = activeSearchIndexes ? ' \u00B7 \uC9C0\uB3C4 ' + visibleMapCount + '\uAC74 \uD45C\uC2DC' : '';
+    let html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#9CA3AF;padding:6px 2px 8px;"><span>\uC804\uAD6D \uAC80\uC0C9 \uACB0\uACFC' + suffix + mapSuffix + '</span>'
+        + (activeSearchIndexes ? '<button type="button" onclick="clearSearchMapFilter()" style="border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:#fff;border-radius:999px;padding:3px 8px;font-size:10px;cursor:pointer;">\uC9C0\uB3C4 \uCD08\uAE30\uD654</button>' : '')
+        + '</div>';
+    if (activeSearchIndexes && visibleMapCount < results.length) {
+        html += '<div style="font-size:10px;color:#FBBF24;padding:0 2px 7px;">\uD604\uC7AC \uD544\uD130\uC5D0 \uB9DE\uB294 \uAC80\uC0C9 \uACB0\uACFC\uB9CC \uC9C0\uB3C4\uC5D0 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div>';
+    }
 
     shown.forEach(({p, idx, matchType, dong}) => {
         const status = getSearchStatus({p, idx});
@@ -2900,8 +2968,13 @@ window.showPopup = function(idx) {
     }
 };
 
-window.selectSearchResult = function(idx) {
+window.selectSearchResult = function(idx, options = {}) {
     document.getElementById('search-results').style.display = 'none';
+    if (!options.keepSearch) {
+        activeSearchIndexes = new Set([idx]);
+        activeSearchTerm = PHARMACY_DATA[idx]?.name || '';
+        refreshAllMarkers();
+    }
     const p = PHARMACY_DATA[idx];
     if (p.lat && p.lng && map) {
         if (window.innerWidth <= 768 && panelOpen && typeof setPanelOpen === 'function') {
@@ -2919,6 +2992,9 @@ window.showSearchSuggestions = function() {
     const term = (document.getElementById('search-input').value || '').trim();
     const container = document.getElementById('search-results');
     if (term.length < 1) {
+        activeSearchIndexes = null;
+        activeSearchTerm = '';
+        refreshAllMarkers();
         container.style.display = 'none';
         return;
     }
