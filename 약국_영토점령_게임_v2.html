@@ -598,6 +598,46 @@
         }
         table.master-table td { padding: 7px 10px; border-top: 1px solid #333; color: #ddd; }
 
+        .master-section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .master-section-card {
+            background: rgba(255,255,255,0.045);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 12px;
+            min-width: 0;
+        }
+        .master-section-card h3 {
+            font-size: 14px;
+            color: #e8daef;
+            margin-bottom: 10px;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .master-mini-note {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-top: 6px;
+            line-height: 1.45;
+        }
+        .master-bar-wrap {
+            height: 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            min-width: 86px;
+        }
+        .master-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #9b59b6, #4AABDB);
+        }
+
+
         /* ========== Mobile-first field UX refresh ========== */
         :root {
             --surface: rgba(17, 22, 36, 0.97);
@@ -1243,10 +1283,26 @@
     </div>
     <div id="master-dash-email" style="font-size:12px;color:#888;margin-bottom:12px;"></div>
     <div class="master-stat-grid" id="master-stat-grid"></div>
-    <h3 style="font-size:14px;color:#9b59b6;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">지점별 점령 순위</h3>
-    <div class="master-table-wrap"><table class="master-table" id="master-table-players"><thead><tr><th>순위</th><th>지점</th><th>점령 수</th><th>점유율</th></tr></thead><tbody></tbody></table></div>
+    <div class="master-section-grid">
+        <div class="master-section-card">
+            <h3>우선 선점 진행</h3>
+            <div class="master-table-wrap"><table class="master-table" id="master-table-priority"><thead><tr><th>구분</th><th>건수</th><th>진행률</th></tr></thead><tbody></tbody></table></div>
+            <div class="master-mini-note">우선 선점 약국 중 실제 점령 완료된 비율입니다.</div>
+        </div>
+        <div class="master-section-card">
+            <h3>점령불가 사유 TOP</h3>
+            <div class="master-table-wrap"><table class="master-table" id="master-table-unavailable"><thead><tr><th>사유</th><th>건수</th><th>비율</th></tr></thead><tbody></tbody></table></div>
+            <div class="master-mini-note">현장 병목 사유를 빠르게 파악하기 위한 집계입니다.</div>
+        </div>
+    </div>
+    <div class="master-section-card" style="margin-bottom:16px;">
+        <h3>상권별 진행 현황</h3>
+        <div class="master-table-wrap"><table class="master-table" id="master-table-market"><thead><tr><th>상권</th><th>총 약국</th><th>점령</th><th>점령불가</th><th>진행률</th><th>그래프</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <h3 style="font-size:14px;color:#9b59b6;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">담당/지점별 점령 순위</h3>
+    <div class="master-table-wrap"><table class="master-table" id="master-table-players"><thead><tr><th>순위</th><th>담당/지점</th><th>점령 수</th><th>점유율</th></tr></thead><tbody></tbody></table></div>
     <h3 style="font-size:14px;color:#9b59b6;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">지점별 집계</h3>
-    <div class="master-table-wrap"><table class="master-table" id="master-table-branches"><thead><tr><th>지점</th><th>점령 약국 수</th></tr></thead><tbody></tbody></table></div>
+    <div class="master-table-wrap"><table class="master-table" id="master-table-branches"><thead><tr><th>지점</th><th>점령</th><th>점령불가</th><th>진행률</th></tr></thead><tbody></tbody></table></div>
 </div>
 
 <!-- hidden fields for backward compat -->
@@ -2504,19 +2560,50 @@ function toggleMasterDashboard() {
     if (d.classList.contains('open')) refreshMasterDashboard();
 }
 
+function escapeMasterHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function percentText(part, total) {
+    return total ? ((part / total) * 100).toFixed(1) + '%' : '0.0%';
+}
+
+function masterProgressBar(pct) {
+    var width = Math.max(0, Math.min(100, Number(pct) || 0));
+    return '<div class="master-bar-wrap"><div class="master-bar-fill" style="width:' + width.toFixed(1) + '%"></div></div>';
+}
+
 function refreshMasterDashboard() {
     if (!window._isMasterAdmin) return;
     var dash = document.getElementById('master-dashboard');
     if (!dash || !dash.classList.contains('open')) return;
 
     var total = PHARMACY_DATA.length;
-    var claimed = getClaimedStateEntries().length;
-    var unavailable = getUnavailableStateEntries().length;
+    var claimedEntries = getClaimedStateEntries();
+    var unavailableEntries = getUnavailableStateEntries();
+    var claimed = claimedEntries.length;
+    var unavailable = unavailableEntries.length;
     var pct = total ? ((claimed / total) * 100).toFixed(1) : '0';
+    var progressPct = total ? (((claimed + unavailable) / total) * 100).toFixed(1) : '0';
+
+    var priorityTotal = PHARMACY_DATA.filter(function(p) { return p.priority_target; }).length;
+    var priorityClaimed = claimedEntries.filter(function(ent) {
+        var ph = getPharmacyByStateKey(ent[0]);
+        return ph && ph.priority_target;
+    }).length;
+    var priorityUnavailable = unavailableEntries.filter(function(ent) {
+        var ph = getPharmacyByStateKey(ent[0]);
+        return ph && ph.priority_target;
+    }).length;
 
     var playerKeys = {};
     Object.keys(gameState.players || {}).forEach(function(k) { playerKeys[k] = true; });
-    getClaimedStateEntries().forEach(function(ent) {
+    claimedEntries.forEach(function(ent) {
         var s = ent[1];
         if (s && s.claimed_by) playerKeys[s.claimed_by] = true;
     });
@@ -2525,16 +2612,62 @@ function refreshMasterDashboard() {
     var grid = document.getElementById('master-stat-grid');
     if (grid) {
         grid.innerHTML =
-            '<div class="master-stat-card"><div class="lbl">총 약국 수</div><div class="val">' + total + '</div></div>' +
-            '<div class="master-stat-card"><div class="lbl">점령됨</div><div class="val">' + claimed + '</div></div>' +
-            '<div class="master-stat-card"><div class="lbl">미점령</div><div class="val">' + Math.max(0, total - claimed - unavailable) + '</div></div>' +
-            '<div class="master-stat-card"><div class="lbl">점령불가</div><div class="val">' + unavailable + '</div></div>' +
-            '<div class="master-stat-card"><div class="lbl">점유율</div><div class="val">' + pct + '%</div></div>' +
-            '<div class="master-stat-card"><div class="lbl">참여자(추정)</div><div class="val">' + playerCount + '</div></div>';
+            '<div class="master-stat-card"><div class="lbl">\uCD1D \uC57D\uAD6D \uC218</div><div class="val">' + total.toLocaleString() + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uC810\uB839\uB428</div><div class="val">' + claimed.toLocaleString() + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uBBF8\uC810\uB839</div><div class="val">' + Math.max(0, total - claimed - unavailable).toLocaleString() + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uC810\uB839\uBD88\uAC00</div><div class="val">' + unavailable.toLocaleString() + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uC810\uC720\uC728</div><div class="val">' + pct + '%</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uC9C4\uD589\uB960</div><div class="val">' + progressPct + '%</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uC6B0\uC120 \uC120\uC810</div><div class="val">' + priorityClaimed.toLocaleString() + '/' + priorityTotal.toLocaleString() + '</div></div>' +
+            '<div class="master-stat-card"><div class="lbl">\uCC38\uC5EC\uC790(\uCD94\uC815)</div><div class="val">' + playerCount.toLocaleString() + '</div></div>';
+    }
+
+    var priorityTbody = document.querySelector('#master-table-priority tbody');
+    if (priorityTbody) {
+        var priorityOpen = Math.max(0, priorityTotal - priorityClaimed - priorityUnavailable);
+        priorityTbody.innerHTML = [
+            ['\uC6B0\uC120 \uC120\uC810 \uC804\uCCB4', priorityTotal, percentText(priorityTotal, priorityTotal)],
+            ['\uC810\uB839 \uC644\uB8CC', priorityClaimed, percentText(priorityClaimed, priorityTotal)],
+            ['\uC810\uB839\uBD88\uAC00', priorityUnavailable, percentText(priorityUnavailable, priorityTotal)],
+            ['\uBBF8\uC9C4\uD589', priorityOpen, percentText(priorityOpen, priorityTotal)]
+        ].map(function(row) {
+            return '<tr><td>' + row[0] + '</td><td>' + Number(row[1]).toLocaleString() + '</td><td>' + row[2] + '</td></tr>';
+        }).join('');
+    }
+
+    var reasonCounts = {};
+    unavailableEntries.forEach(function(ent) {
+        var reason = String((ent[1] && ent[1].unavailable_reason) || '\uBBF8\uC785\uB825').trim() || '\uBBF8\uC785\uB825';
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+    });
+    var reasonRows = Object.entries(reasonCounts).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 8);
+    var unavailableTbody = document.querySelector('#master-table-unavailable tbody');
+    if (unavailableTbody) {
+        unavailableTbody.innerHTML = reasonRows.map(function(row) {
+            return '<tr><td>' + escapeMasterHtml(row[0]) + '</td><td>' + row[1].toLocaleString() + '</td><td>' + percentText(row[1], unavailable) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3" style="color:#666;">\uC810\uB839\uBD88\uAC00 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4</td></tr>';
+    }
+
+    var markets = ['\uC678\uAD6D\uC778\uAD00\uAD11', '\uC720\uB3D9\uC778\uAD6C', '\uC131\uD615\u00B7\uD53C\uBD80\uACFC', '\uC8FC\uAC70'];
+    var marketTbody = document.querySelector('#master-table-market tbody');
+    if (marketTbody) {
+        marketTbody.innerHTML = markets.map(function(market) {
+            var marketTotal = PHARMACY_DATA.filter(function(p) { return p.market_type === market; }).length;
+            var marketClaimed = claimedEntries.filter(function(ent) {
+                var ph = getPharmacyByStateKey(ent[0]);
+                return ph && ph.market_type === market;
+            }).length;
+            var marketUnavailable = unavailableEntries.filter(function(ent) {
+                var ph = getPharmacyByStateKey(ent[0]);
+                return ph && ph.market_type === market;
+            }).length;
+            var done = marketTotal ? ((marketClaimed + marketUnavailable) / marketTotal * 100) : 0;
+            return '<tr><td>' + market + '</td><td>' + marketTotal.toLocaleString() + '</td><td>' + marketClaimed.toLocaleString() + '</td><td>' + marketUnavailable.toLocaleString() + '</td><td>' + done.toFixed(1) + '%</td><td>' + masterProgressBar(done) + '</td></tr>';
+        }).join('');
     }
 
     var scores = {};
-    getClaimedStateEntries().forEach(function(ent) {
+    claimedEntries.forEach(function(ent) {
         var s = ent[1];
         scores[s.claimed_by] = (scores[s.claimed_by] || 0) + 1;
     });
@@ -2543,23 +2676,38 @@ function refreshMasterDashboard() {
     if (tbody) {
         tbody.innerHTML = sorted.map(function(row, i) {
             var name = row[0], cnt = row[1];
-            var p = ((cnt / total) * 100).toFixed(1);
-            return '<tr><td>' + (i + 1) + '</td><td>' + name + '</td><td>' + cnt + '</td><td>' + p + '%</td></tr>';
-        }).join('') || '<tr><td colspan="4" style="color:#666;">아직 점령 데이터가 없습니다</td></tr>';
+            return '<tr><td>' + (i + 1) + '</td><td>' + escapeMasterHtml(formatPlayerName(name)) + '</td><td>' + cnt.toLocaleString() + '</td><td>' + percentText(cnt, total) + '</td></tr>';
+        }).join('') || '<tr><td colspan="4" style="color:#666;">\uC544\uC9C1 \uC810\uB839 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4</td></tr>';
     }
 
     var byBranch = {};
-    getClaimedStateEntries().forEach(function(ent) {
+    PHARMACY_DATA.forEach(function(ph) {
+        var branch = ph.branch || '\uBBF8\uC9C0\uC815';
+        if (!byBranch[branch]) byBranch[branch] = { total: 0, claimed: 0, unavailable: 0 };
+        byBranch[branch].total += 1;
+    });
+    claimedEntries.forEach(function(ent) {
         var ph = getPharmacyByStateKey(ent[0]);
         if (!ph) return;
-        byBranch[ph.branch] = (byBranch[ph.branch] || 0) + 1;
+        var branch = ph.branch || '\uBBF8\uC9C0\uC815';
+        if (!byBranch[branch]) byBranch[branch] = { total: 0, claimed: 0, unavailable: 0 };
+        byBranch[branch].claimed += 1;
     });
-    var brRows = Object.entries(byBranch).sort(function(a, b) { return b[1] - a[1]; });
+    unavailableEntries.forEach(function(ent) {
+        var ph = getPharmacyByStateKey(ent[0]);
+        if (!ph) return;
+        var branch = ph.branch || '\uBBF8\uC9C0\uC815';
+        if (!byBranch[branch]) byBranch[branch] = { total: 0, claimed: 0, unavailable: 0 };
+        byBranch[branch].unavailable += 1;
+    });
+    var brRows = Object.entries(byBranch).sort(function(a, b) { return b[1].claimed - a[1].claimed; });
     var btbody = document.querySelector('#master-table-branches tbody');
     if (btbody) {
         btbody.innerHTML = brRows.map(function(r) {
-            return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>';
-        }).join('') || '<tr><td colspan="2" style="color:#666;">지점별 집계 없음</td></tr>';
+            var branch = r[0], stats = r[1];
+            var done = stats.total ? ((stats.claimed + stats.unavailable) / stats.total * 100) : 0;
+            return '<tr><td>' + escapeMasterHtml(branch) + '</td><td>' + stats.claimed.toLocaleString() + '</td><td>' + stats.unavailable.toLocaleString() + '</td><td>' + done.toFixed(1) + '%</td></tr>';
+        }).join('') || '<tr><td colspan="4" style="color:#666;">\uC9C0\uC810\uBCC4 \uC9D1\uACC4 \uC5C6\uC74C</td></tr>';
     }
 }
 
