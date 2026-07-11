@@ -1083,7 +1083,7 @@
     <div class="panel-section" style="padding-top:12px; padding-bottom:4px;">
         <h3 style="margin-bottom:8px;">🔎 약국 검색</h3>
         <div style="display:flex; gap:6px;">
-            <input type="text" id="search-input" placeholder="약국명·주소 입력" oninput="showSearchSuggestions()" onkeydown="if(event.key==='Enter') searchPharmacy()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid #555; border-radius:6px; padding:6px 10px; color:#fff; font-size:13px; font-family:inherit;">
+            <input type="text" id="search-input" placeholder="&#50557;&#44397;&#47749;&middot;&#51648;&#50669;&middot;&#51452;&#49548; &#51077;&#47141;" oninput="showSearchSuggestions()" onkeydown="if(event.key==='Enter') searchPharmacy()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid #555; border-radius:6px; padding:6px 10px; color:#fff; font-size:13px; font-family:inherit;">
             <button onclick="searchPharmacy()" style="padding:6px 12px; background:#4AABDB; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px;">검색</button>
         </div>
         <div id="search-results" style="max-height:200px; overflow-y:auto; margin-top:4px; display:none;"></div>
@@ -2689,59 +2689,128 @@ window.updateLeaderboard = function() {
     updateIncentive();
 };
 
-/* 약국명 검색 기능 (지점/담당자 필터 연동) */
+/* Nationwide pharmacy and region search */
+function normalizeSearchText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[\s,._\-()\[\]{}\u00B7\/]/g, '');
+}
+
+function splitSearchTerms(value) {
+    return String(value || '')
+        .toLowerCase()
+        .split(/[\s,._\-()\[\]{}\u00B7\/]+/)
+        .map(t => t.trim())
+        .filter(Boolean);
+}
+
+function escapeSearchHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getPharmacyDong(address) {
+    const text = String(address || '');
+    const paren = text.match(/\(([^)]*[\uAC00-\uD7A3]+[\uB3D9\uAC00-\uD7A3]*)\)/);
+    if (paren && paren[1]) return paren[1].split(',')[0].trim();
+    const tokens = text.split(/\s+/);
+    const found = tokens.find(t => /[\uAC00-\uD7A3]+(\uB3D9|\uAC00|\uB85C|\uBA74|\uC74D)$/.test(t));
+    return found || '';
+}
+
+function getSearchStatus(row) {
+    const state = getStateByIndex(row.idx);
+    if (isUnavailableState(state)) return { dot: '\uD83D\uDEAB', label: '\uC810\uB839\uBD88\uAC00' };
+    if (isClaimedState(state)) return { dot: '\uD83D\uDFE2', label: '\uC810\uB839\uB428' };
+    if (row.p.priority_target) return { dot: '\u2B50', label: '\uC6B0\uC120\uC120\uC810' };
+    return { dot: '\u26AA', label: '\uBBF8\uC810\uB839' };
+}
+
+function buildSearchRows(term) {
+    const raw = String(term || '').trim();
+    const compact = normalizeSearchText(raw);
+    const terms = splitSearchTerms(raw).map(normalizeSearchText);
+    if (!compact) return [];
+
+    return PHARMACY_DATA.map((p, idx) => {
+        const name = normalizeSearchText(p.name);
+        const address = normalizeSearchText(p.address);
+        const region = normalizeSearchText(p.region);
+        const district = normalizeSearchText(p.district);
+        const dong = normalizeSearchText(getPharmacyDong(p.address));
+        const branch = normalizeSearchText(p.branch);
+        const phone = normalizeSearchText(p.phone);
+        const haystack = [name, address, region, district, dong, branch, phone].join('|');
+        const termMatched = terms.length > 1 && terms.every(t => haystack.includes(t));
+
+        let score = 0;
+        let matchType = '';
+        if (name === compact) { score = 120; matchType = '\uC57D\uAD6D\uBA85 \uC815\uD655\uC77C\uCE58'; }
+        else if (name.startsWith(compact)) { score = 90; matchType = '\uC57D\uAD6D\uBA85 \uC55E\uC77C\uCE58'; }
+        else if (name.includes(compact)) { score = 75; matchType = '\uC57D\uAD6D\uBA85 \uD3EC\uD568'; }
+        else if (address.includes(compact) || region.includes(compact) || district.includes(compact) || dong.includes(compact) || termMatched) { score = 55; matchType = '\uC9C0\uC5ED/\uC8FC\uC18C \uC77C\uCE58'; }
+        else if (phone && phone.includes(compact)) { score = 40; matchType = '\uC804\uD654\uBC88\uD638 \uC77C\uCE58'; }
+        if (!score) return null;
+
+        if (p.priority_target) score += 8;
+        if (p.branch === currentBranch) score += 4;
+        return { p, idx, score, matchType, dong: getPharmacyDong(p.address) };
+    }).filter(Boolean).sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return String(a.p.name || '').localeCompare(String(b.p.name || ''), 'ko');
+    });
+}
+
 window.searchPharmacy = function() {
     const term = (document.getElementById('search-input').value || '').trim();
     if (!term) return;
     document.getElementById('search-results').style.display = 'none';
-    
-    // 현재 필터 상태 반영하여 검색 대상 범위 결정
-    const candidates = PHARMACY_DATA.map((p, idx) => ({p, idx})).filter(({p}) => {
-        if (currentBranch !== 'all' && currentBranch !== '기타' && p.branch !== currentBranch) return false;
-        if (currentManager && p.manager !== currentManager) return false;
-        return true;
-    });
-    
-    // 약국명, 주소에서 부분 일치 검색 (모든 결과)
-    const results = candidates.filter(({p}) => 
-        p.name.includes(term) || 
-        (p.address && p.address.includes(term))
-    );
-    
+
+    const results = buildSearchRows(term);
     if (results.length === 0) {
-        const scope = currentBranch !== 'all' ? ` [${currentBranch}]` : '';
-        const mgrScope = currentManager ? ` [${currentManager}]` : '';
-        alert("'" + term + "' 검색 결과가 없습니다." + scope + mgrScope);
+        alert("'" + term + "' \uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.");
         return;
     }
-    
-    // 결과가 1개면 바로 이동, 여러 개면 목록 표시
+
     if (results.length === 1) {
         selectSearchResult(results[0].idx);
     } else {
-        showSearchResultList(results.slice(0, 20));
+        showSearchResultList(results, { explicit: true, term });
     }
 };
 
-/* 검색 결과 목록 표시 */
-function showSearchResultList(results) {
+function showSearchResultList(results, options = {}) {
     const container = document.getElementById('search-results');
-    let html = '<div style="font-size:11px;color:#888;padding:4px 0;">검색 결과: ' + results.length + '건</div>';
-    results.forEach(({p, idx}) => {
-        const state = getStateByIndex(idx);
-        const dot = state ? '🟢' : '⚪';
-        html += '<div onclick="selectSearchResult(' + idx + ')" style="padding:6px 8px;cursor:pointer;border-bottom:1px solid #333;font-size:12px;transition:background .2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.1)\'" onmouseout="this.style.background=\'transparent\'">'
-            + dot + ' <strong>' + p.name + '</strong>'
-            + '<br><span style="font-size:10px;color:#888;">' + (p.address || '').substring(0, 35) + '... | ' + p.branch + ' ' + (p.manager||'') + '</span>'
+    const explicit = !!options.explicit;
+    const exactNameCount = results.filter(r => normalizeSearchText(r.p.name) === normalizeSearchText(options.term || '')).length;
+    const limit = explicit ? (exactNameCount > 0 ? results.length : Math.min(results.length, 300)) : Math.min(results.length, 20);
+    const shown = results.slice(0, limit);
+    const suffix = shown.length < results.length ? ' / ' + results.length + '\uAC74 \uC911 \uC0C1\uC704 ' + shown.length + '\uAC74' : ' / ' + results.length + '\uAC74';
+    let html = '<div style="font-size:11px;color:#9CA3AF;padding:6px 2px 8px;">\uC804\uAD6D \uAC80\uC0C9 \uACB0\uACFC' + suffix + '</div>';
+
+    shown.forEach(({p, idx, matchType, dong}) => {
+        const status = getSearchStatus({p, idx});
+        const priority = p.priority_target ? '<span style="color:#FFD166;font-weight:800;">\u2B50</span> ' : '';
+        const regionText = [p.region, p.district, dong].filter(Boolean).join(' ');
+        html += '<div onclick="selectSearchResult(' + idx + ')" style="padding:9px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.45;transition:background .2s;border-radius:8px;">'
+            + '<div style="display:flex;align-items:center;gap:6px;">'
+            + '<span>' + status.dot + '</span>' + priority
+            + '<strong style="font-size:13px;color:#fff;">' + escapeSearchHtml(p.name) + '</strong>'
+            + '</div>'
+            + '<div style="font-size:10px;color:#93C5FD;margin-top:2px;">' + escapeSearchHtml(matchType || '') + ' \u00B7 ' + escapeSearchHtml(regionText || '-') + '</div>'
+            + '<div style="font-size:10px;color:#888;margin-top:2px;">' + escapeSearchHtml((p.address || '').substring(0, 58)) + ((p.address || '').length > 58 ? '...' : '') + '</div>'
+            + '<div style="font-size:10px;color:#aaa;margin-top:2px;">' + escapeSearchHtml(p.branch || '-') + ' \u00B7 ' + escapeSearchHtml(status.label) + '</div>'
             + '</div>';
     });
     container.innerHTML = html;
     container.style.display = 'block';
 }
 
-/* 검색 결과 클릭 시 지도 이동 */
-
-/* 마커 팝업 열기 구현 */
+/* Popup open */
 window.showPopup = function(idx) {
     const m = pharmacyMarkers[idx];
     if (m && map) {
@@ -2771,27 +2840,17 @@ window.showSearchSuggestions = function() {
         container.style.display = 'none';
         return;
     }
-    
-    // 현재 필터 범위 내에서 검색
-    const candidates = PHARMACY_DATA.map((p, idx) => ({p, idx})).filter(({p}) => {
-        if (currentBranch !== 'all' && currentBranch !== '기타' && p.branch !== currentBranch) return false;
-        if (currentManager && p.manager !== currentManager) return false;
-        return true;
-    });
-    
-    const results = candidates.filter(({p}) => 
-        p.name.includes(term) || 
-        (p.manager && p.manager.includes(term))
-    ).slice(0, 10);
-    
+
+    const results = buildSearchRows(term);
     if (results.length === 0) {
-        container.innerHTML = '<div style="padding:8px;font-size:12px;color:#888;">검색 결과 없음</div>';
+        container.innerHTML = '<div style="padding:8px;font-size:12px;color:#888;">\uAC80\uC0C9 \uACB0\uACFC \uC5C6\uC74C</div>';
         container.style.display = 'block';
         return;
     }
-    
-    showSearchResultList(results);
+
+    showSearchResultList(results, { explicit: false, term });
 };
+
 
 /* startGame 후 초기화 */
 const _origSG = startGame;
