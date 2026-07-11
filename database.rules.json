@@ -1,0 +1,27 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": "auth != null",
+        "players": {
+          "$playerId": {
+            ".write": "auth != null"
+          }
+        },
+        "pharmacies": {
+          "$pharmacyId": {
+            ".write": "auth != null"
+          }
+        },
+        "$other": {
+          ".read": "auth != null",
+          ".write": false
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

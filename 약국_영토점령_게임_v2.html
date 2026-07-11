@@ -934,8 +934,8 @@
     <script type="module">
       import { initializeApp, getApp, getApps } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
       import { getDatabase, ref, set, onValue, update, get } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js';
-      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
-      window._fbImports = { initializeApp, getApp, getApps, getDatabase, getAuth, ref, set, onValue, update, get, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+      import { getAuth, signInWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
+      window._fbImports = { initializeApp, getApp, getApps, getDatabase, getAuth, ref, set, onValue, update, get, signInWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged };
       
       // 모듈 로드 완료 이벤트를 발생시켜 일반 스크립트에서 안전하게 사용할 수 있도록 함
       window.dispatchEvent(new CustomEvent('FirebaseModuleLoaded'));
@@ -2037,6 +2037,22 @@ function isMasterAdminEmail(email) {
     return MASTER_ADMIN_EMAILS.indexOf(String(email).trim().toLowerCase()) >= 0;
 }
 
+async function ensureFirebaseAuth() {
+    if (!_auth) return false;
+    if (_auth.currentUser) return true;
+    var imp = window._fbImports;
+    if (!imp || !imp.signInAnonymously) return false;
+    try {
+        await imp.signInAnonymously(_auth);
+        return true;
+    } catch (e) {
+        console.error('Firebase anonymous auth failed:', e);
+        if (typeof showToast === 'function') showToast('??? ??? ?? ?? - ?? ??? ?????.');
+        _gameMode = 'local';
+        return false;
+    }
+}
+
 function syncFirebasePharmacyRowToGameState(i, row) {
     var p = PHARMACY_DATA[i];
     if (!p) return;
@@ -2100,6 +2116,7 @@ async function initFirebase() {
 
 async function loadFromFirebase() {
     if (!_db || !_roomId) return;
+    if (!await ensureFirebaseAuth()) return;
     var imp = window._fbImports;
     try {
         var snap = await imp.get(imp.ref(_db, 'rooms/' + _roomId + '/pharmacies'));
@@ -2115,8 +2132,9 @@ async function loadFromFirebase() {
     } catch(e) { console.error("Firebase 로드 오류:", e); }
 }
 
-function startFirebaseListener() {
+async function startFirebaseListener() {
     if (!_db || !_roomId) return;
+    if (!await ensureFirebaseAuth()) return;
     var imp = window._fbImports;
     if (typeof _fbUnsubPharmacies === 'function') { _fbUnsubPharmacies(); _fbUnsubPharmacies = null; }
     if (typeof _fbUnsubPlayers === 'function') { _fbUnsubPlayers(); _fbUnsubPlayers = null; }
@@ -2185,6 +2203,7 @@ function startFirebaseListener() {
 
 async function saveToFirebase(idx) {
     if (!_db || !_roomId) return;
+    if (!await ensureFirebaseAuth()) return;
     var imp = window._fbImports;
     var st = getStateByIndex(idx);
     var pharm = PHARMACY_DATA[idx];
@@ -2348,7 +2367,7 @@ async function enterMasterAdminMode(user) {
         refreshAllMarkers();
         updateLeaderboard();
         if (typeof updateIncentive === 'function') updateIncentive();
-        startFirebaseListener();
+        await startFirebaseListener();
     }
     if (typeof setBranchFilter === 'function') setBranchFilter('all');
 
@@ -2429,6 +2448,9 @@ async function startGameMulti() {
                 console.log("Firebase 초기화 성공, 데이터 동기화 시작");
                 const imp = window._fbImports;
                 const myColor = BRANCH_CONFIG[branch].color;
+                if (!await ensureFirebaseAuth()) {
+                    throw { code: 'PERMISSION_DENIED', message: 'anonymous auth failed' };
+                }
                 await imp.update(imp.ref(_db), {
                     ['rooms/' + _roomId + '/players/' + _currentName]: {
                         color: myColor,
@@ -2441,7 +2463,7 @@ async function startGameMulti() {
                 refreshAllMarkers();
                 updateLeaderboard(); 
                 if(typeof updateIncentive === 'function') updateIncentive();
-                startFirebaseListener();
+                await startFirebaseListener();
             } catch (syncErr) {
                 if (isFirebasePermissionError(syncErr)) {
                     enterLocalSyncFallback(syncErr);
@@ -2676,7 +2698,13 @@ function toggleTrading(idx, val) {
         if (imp && window._db && window._roomId) {
             const upd = {};
             upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/is_trading'] = val;
-            imp.update(imp.ref(window._db), upd).catch(()=>{});
+            ensureFirebaseAuth().then(function(ok) {
+                if (!ok) return;
+                return imp.update(imp.ref(window._db), upd);
+            }).catch(function(e) {
+                if (isFirebasePermissionError(e)) enterLocalSyncFallback(e);
+                else console.error('Firebase trading update error:', e);
+            });
         }
     }
     updateIncentive();

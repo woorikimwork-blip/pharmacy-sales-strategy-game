@@ -32,3 +32,17 @@ python apply_update.py --yes
 ```powershell
 python update_pharmacy_data.py --apply
 ```
+
+## Firebase 실시간 동기화 설정
+
+일반 영업 사용자는 Firebase 익명 인증으로 자동 접속하고, 관리자는 이메일/비밀번호 인증을 사용합니다.
+
+1. Firebase Console > Authentication > Sign-in method에서 Anonymous를 활성화합니다.
+2. Firebase Console > Realtime Database > Rules에 `database.rules.json` 내용을 적용합니다.
+3. Firebase CLI를 사용할 경우 아래 명령으로 규칙을 배포할 수 있습니다.
+
+```powershell
+firebase deploy --only database
+```
+
+적용 후 일반 사용자가 게임 시작을 누르면 익명 인증이 자동으로 수행되며, 점령/점령불가/거래여부가 Firebase에 실시간 동기화됩니다.
