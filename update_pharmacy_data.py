@@ -119,6 +119,46 @@ def fetch_page(page_no, num_of_rows=1000, sido_cd=""):
         return None
 
 
+def parse_items_from_body(body):
+    items_raw = body.get("items", {})
+    if not items_raw:
+        return []
+    item_list = items_raw.get("item", [])
+    if isinstance(item_list, dict):
+        return [item_list]
+    return item_list or []
+
+
+def fetch_all_pages():
+    all_items = []
+    page_no = 1
+    total = None
+    print("  [all regions] fetching...", end="", flush=True)
+    while True:
+        data = fetch_page(page_no, 1000)
+        if not data:
+            break
+        try:
+            body = data["response"]["body"]
+            total = int(body.get("totalCount") or 0)
+            if total == 0:
+                break
+            item_list = parse_items_from_body(body)
+            if not item_list:
+                break
+            all_items.extend(item_list)
+            if page_no * 1000 >= total:
+                break
+            page_no += 1
+            time.sleep(0.2)
+        except Exception as exc:
+            print(f" parse error: {exc}")
+            break
+    suffix = f" / expected {total:,}" if total else ""
+    print(f" {len(all_items):,} rows{suffix}")
+    return all_items
+
+
 def fetch_all_by_region(limit_regions=None):
     all_items = []
     region_items = list(SIDO_CODES.items())
@@ -139,12 +179,9 @@ def fetch_all_by_region(limit_regions=None):
                 total = int(body.get("totalCount") or 0)
                 if total == 0:
                     break
-                items_raw = body.get("items", {})
-                if not items_raw:
+                item_list = parse_items_from_body(body)
+                if not item_list:
                     break
-                item_list = items_raw.get("item", [])
-                if isinstance(item_list, dict):
-                    item_list = [item_list]
                 all_items.extend(item_list)
                 region_count += len(item_list)
                 if page_no * 1000 >= total:
@@ -413,7 +450,10 @@ def main():
     existing, data_content = load_pharmacy_data()
 
     print(f"\n[3] Fetching public API data...")
-    api_items = fetch_all_by_region(args.region)
+    if args.region:
+        api_items = fetch_all_by_region(args.region)
+    else:
+        api_items = fetch_all_pages()
     print(f"\n  fetched total: {len(api_items):,}")
 
     print("\n[4] Building review and candidate data...")
