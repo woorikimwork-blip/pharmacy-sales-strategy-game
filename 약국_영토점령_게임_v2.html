@@ -583,6 +583,28 @@
             color: #e8daef;
         }
         #master-admin-banner.active { display: flex; }
+        #env-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            white-space: nowrap;
+        }
+        #env-mode-badge.test {
+            background: rgba(245,158,11,0.24);
+            border-color: #F59E0B;
+            color: #FDE68A;
+        }
+        #env-mode-badge.production {
+            background: rgba(16,185,129,0.18);
+            border-color: #10B981;
+            color: #A7F3D0;
+        }
 
         #master-login-section {
             margin-top: 14px;
@@ -681,6 +703,52 @@
             height: 100%;
             border-radius: 999px;
             background: linear-gradient(90deg, #9b59b6, #4AABDB);
+        }
+        .master-danger-zone {
+            border: 1px solid rgba(248,113,113,0.48);
+            background: rgba(127,29,29,0.16);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 16px;
+        }
+        .master-danger-zone h3 {
+            color: #FCA5A5;
+            font-size: 14px;
+            margin-bottom: 8px;
+            letter-spacing: 0;
+        }
+        .master-danger-zone p {
+            color: #CBD5E1;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .master-reset-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .master-reset-row input {
+            flex: 1 1 220px;
+            min-width: 0;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: #fff;
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        .master-reset-row button {
+            border: 1px solid #F87171;
+            background: rgba(239,68,68,0.24);
+            color: #FEE2E2;
+            border-radius: 8px;
+            padding: 9px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 800;
         }
 
 
@@ -1236,6 +1304,7 @@
 <div id="topbar">
     <h1>🏆 약국 <span>영토점령</span> 게임</h1>
     <div style="font-size:12px;color:#aaa;">총 16,764개 약국</div>
+    <div id="env-mode-badge" aria-live="polite">테스트 모드</div>
     <div id="master-admin-banner" aria-live="polite">🛡️ 마스터 관리자 모드</div>
     <div class="spacer"></div>
 
@@ -1349,6 +1418,15 @@
     <div class="master-table-wrap"><table class="master-table" id="master-table-players"><thead><tr><th>순위</th><th>담당/지점</th><th>점령 수</th><th>점유율</th></tr></thead><tbody></tbody></table></div>
     <h3 style="font-size:14px;color:#9b59b6;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">지점별 집계</h3>
     <div class="master-table-wrap"><table class="master-table" id="master-table-branches"><thead><tr><th>지점</th><th>점령</th><th>점령불가</th><th>진행률</th></tr></thead><tbody></tbody></table></div>
+    <div class="master-danger-zone" id="master-reset-zone">
+        <h3>테스트 데이터 초기화</h3>
+        <p id="master-reset-desc">현재 테스트방의 참여자, 점령, 점령불가 데이터를 백업 후 초기화합니다. 약국 원본 데이터는 삭제되지 않습니다.</p>
+        <div class="master-reset-row">
+            <input type="text" id="master-reset-confirm" autocomplete="off" placeholder="초기화 문구 입력">
+            <button type="button" id="master-reset-btn" onclick="masterResetCurrentRoom()">백업 후 초기화</button>
+        </div>
+        <p id="master-reset-help" style="margin-top:8px;color:#94A3B8;"></p>
+    </div>
 </div>
 
 <!-- hidden fields for backward compat -->
@@ -1480,7 +1558,27 @@ let currentViewMode = 'all';
 let panelOpen = true;
 let map;
 
-const STORAGE_KEY = 'pharmacy_game_v3_reset';
+var APP_ENV = window.APP_ENV || 'test'; // 7/15 실전 테스트 후, 7/27 운영 전환 시 'production'으로 변경
+var APP_ENV_CONFIG = window.APP_ENV_CONFIG || {
+    test: {
+        label: '테스트 모드',
+        roomId: 'DERMA_TEST_20260715',
+        resetEnabled: true,
+        resetPhrase: '테스트초기화',
+        description: '7월 15일 영업사원 실전 테스트용 방입니다.'
+    },
+    production: {
+        label: '운영 모드',
+        roomId: 'DERMA_PROD_20260727',
+        resetEnabled: false,
+        resetPhrase: '운영초기화',
+        description: '7월 27일 제품 런칭 운영용 방입니다.'
+    }
+};
+window.APP_ENV = APP_ENV;
+window.APP_ENV_CONFIG = APP_ENV_CONFIG;
+
+const STORAGE_KEY = 'pharmacy_game_v3_reset_' + ((APP_ENV_CONFIG[APP_ENV] || APP_ENV_CONFIG.test).roomId);
 const STORAGE_SCHEMA_VERSION = 2;
 
 // Load saved state
@@ -2351,6 +2449,7 @@ window.addEventListener('load', function() {
         return;
     }
     loadState();
+    if (typeof refreshEnvironmentChrome === 'function') refreshEnvironmentChrome();
     initMap();
     updateLeaderboard();
 
@@ -2368,10 +2467,11 @@ var _gameMode = 'online';
 var _db = null;
 var _fbApp = null;
 var _auth = null;
-var _roomId = 'DERMA_V3_RESET'; // 고정 방 코드 - 모든 지점이 하나의 맵 공유
+var _roomId = (APP_ENV_CONFIG[APP_ENV] || APP_ENV_CONFIG.test).roomId;
 var _fbUnsubPharmacies = null;
 var _fbUnsubPlayers = null;
 var _currentName = null;
+window._roomId = _roomId;
 
 /** GitHub에 배포한 HTML에서 허용할 마스터 관리자 이메일 (Firebase Auth 사용자와 동일해야 함) */
 var MASTER_ADMIN_EMAILS = [
@@ -2449,8 +2549,52 @@ function setSyncStatus(connected, text) {
     console.log('[Sync]', connected ? '✅' : '❌', text);
 }
 
+function getCurrentEnvConfig() {
+    return APP_ENV_CONFIG[APP_ENV] || APP_ENV_CONFIG.test;
+}
+
+function refreshEnvironmentChrome() {
+    var cfg = getCurrentEnvConfig();
+    _roomId = cfg.roomId;
+    window._roomId = _roomId;
+
+    var badge = document.getElementById('env-mode-badge');
+    if (badge) {
+        badge.textContent = cfg.label;
+        badge.className = APP_ENV === 'production' ? 'production' : 'test';
+        badge.title = cfg.description + ' / 방 코드: ' + cfg.roomId;
+    }
+
+    var resetZone = document.getElementById('master-reset-zone');
+    var resetDesc = document.getElementById('master-reset-desc');
+    var resetHelp = document.getElementById('master-reset-help');
+    var resetInput = document.getElementById('master-reset-confirm');
+    var resetBtn = document.getElementById('master-reset-btn');
+
+    if (resetDesc) {
+        resetDesc.textContent = cfg.label + ' (' + cfg.roomId + ')의 참여자, 점령, 점령불가 데이터를 백업 후 초기화합니다. 약국 원본 데이터는 삭제되지 않습니다.';
+    }
+    if (resetHelp) {
+        resetHelp.textContent = cfg.resetEnabled
+            ? '초기화하려면 "' + cfg.resetPhrase + '"를 정확히 입력하세요.'
+            : '운영 모드에서는 실수 방지를 위해 화면 초기화가 비활성화됩니다.';
+    }
+    if (resetInput) {
+        resetInput.placeholder = cfg.resetEnabled ? cfg.resetPhrase + ' 입력' : '운영 모드 초기화 비활성화';
+        resetInput.disabled = !cfg.resetEnabled;
+    }
+    if (resetBtn) {
+        resetBtn.disabled = !cfg.resetEnabled;
+        resetBtn.style.opacity = cfg.resetEnabled ? '1' : '0.45';
+        resetBtn.style.cursor = cfg.resetEnabled ? 'pointer' : 'not-allowed';
+    }
+    if (resetZone) {
+        resetZone.style.display = window._isMasterAdmin ? 'block' : 'none';
+    }
+}
+
 function showRoomBadge() {
-    // 방 배지 숨김 (더이상 사용 안함)
+    refreshEnvironmentChrome();
 }
 
 function isMasterAdminEmail(email) {
@@ -2527,6 +2671,8 @@ async function initFirebase() {
             _fbApp = imp.initializeApp(firebaseConfig);
         }
         _db = imp.getDatabase(_fbApp);
+        window._db = _db;
+        window._roomId = _roomId;
         _auth = imp.getAuth(_fbApp);
         return true;
     } catch(e) {
@@ -2659,6 +2805,7 @@ function updateMasterChrome() {
     if (banner) banner.classList.toggle('active', !!window._isMasterAdmin);
     if (dashBtn) dashBtn.style.display = window._isMasterAdmin ? 'inline-block' : 'none';
     if (logoutBtn) logoutBtn.style.display = window._isMasterAdmin ? 'inline-block' : 'none';
+    refreshEnvironmentChrome();
 }
 
 function toggleMasterDashboard() {
@@ -2690,6 +2837,7 @@ function refreshMasterDashboard() {
     if (!window._isMasterAdmin) return;
     var dash = document.getElementById('master-dashboard');
     if (!dash || !dash.classList.contains('open')) return;
+    refreshEnvironmentChrome();
 
     var total = PHARMACY_DATA.length;
     var claimedEntries = getClaimedStateEntries();
@@ -2816,6 +2964,112 @@ function refreshMasterDashboard() {
             var done = stats.total ? ((stats.claimed + stats.unavailable) / stats.total * 100) : 0;
             return '<tr><td>' + escapeMasterHtml(branch) + '</td><td>' + stats.claimed.toLocaleString() + '</td><td>' + stats.unavailable.toLocaleString() + '</td><td>' + done.toFixed(1) + '%</td></tr>';
         }).join('') || '<tr><td colspan="4" style="color:#666;">\uC9C0\uC810\uBCC4 \uC9D1\uACC4 \uC5C6\uC74C</td></tr>';
+    }
+}
+
+function downloadJsonBackup(filename, data) {
+    var blob = new Blob([JSON.stringify(data || {}, null, 2)], { type: 'application/json;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
+function resetLocalRoomStateAfterAdminClear() {
+    gameState.players = {};
+    gameState.pharmacyStates = {};
+    selectedLeaderboardPlayer = null;
+    PHARMACY_DATA.forEach(function(p) {
+        p.claimed_by = null;
+        p.claimed_at = null;
+    });
+    saveState();
+    refreshAllMarkers();
+    updateLeaderboard();
+    updateMyStats();
+    if (typeof updateIncentive === 'function') updateIncentive();
+    if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
+}
+
+async function masterResetCurrentRoom() {
+    var cfg = getCurrentEnvConfig();
+    if (!window._isMasterAdmin) {
+        showToast('⚠️ 관리자만 초기화할 수 있습니다');
+        return;
+    }
+    if (!cfg.resetEnabled) {
+        showToast('⚠️ 운영 모드에서는 초기화가 비활성화되어 있습니다');
+        return;
+    }
+    var input = document.getElementById('master-reset-confirm');
+    var phrase = input ? input.value.trim() : '';
+    if (phrase !== cfg.resetPhrase) {
+        showToast('⚠️ 초기화 문구가 일치하지 않습니다');
+        return;
+    }
+    var okConfirm = window.confirm(cfg.label + ' 데이터만 초기화합니다.\n방 코드: ' + cfg.roomId + '\n\n점령/점령불가/참여자 데이터가 삭제됩니다. 계속할까요?');
+    if (!okConfirm) return;
+
+    var imp = window._fbImports;
+    if (!imp) {
+        showToast('⚠️ Firebase 모듈 로딩 실패');
+        return;
+    }
+    var ok = await initFirebase();
+    if (!ok || !_db || !_auth) {
+        showToast('⚠️ Firebase 초기화 실패');
+        return;
+    }
+    if (!await ensureFirebaseAuth()) {
+        showToast('⚠️ Firebase 인증 실패');
+        return;
+    }
+    var user = _auth.currentUser;
+    if (!user || !isMasterAdminEmail(user.email)) {
+        showToast('⚠️ 관리자 인증이 필요합니다');
+        return;
+    }
+
+    var btn = document.getElementById('master-reset-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '초기화 중...';
+    }
+    try {
+        var roomPath = 'rooms/' + cfg.roomId;
+        var snap = await imp.get(imp.ref(_db, roomPath));
+        var data = snap.exists() ? snap.val() : {};
+        var now = new Date();
+        var stamp = now.toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '_');
+        downloadJsonBackup('firebase_room_' + cfg.roomId + '_before_reset_' + stamp + '.json', data);
+
+        var updates = {};
+        Object.keys((data && data.players) || {}).forEach(function(key) {
+            updates[roomPath + '/players/' + key] = null;
+        });
+        Object.keys((data && data.pharmacies) || {}).forEach(function(key) {
+            updates[roomPath + '/pharmacies/' + key] = null;
+        });
+
+        if (Object.keys(updates).length > 0) {
+            await imp.update(imp.ref(_db), updates);
+        }
+        resetLocalRoomStateAfterAdminClear();
+        if (input) input.value = '';
+        showToast('✅ 테스트 데이터 초기화 완료');
+    } catch (e) {
+        console.error(e);
+        showToast('⚠️ 초기화 실패: ' + (e.message || e.code || '오류'));
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '백업 후 초기화';
+        }
+        refreshEnvironmentChrome();
     }
 }
 
