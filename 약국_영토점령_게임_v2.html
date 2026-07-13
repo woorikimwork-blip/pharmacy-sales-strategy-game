@@ -1178,8 +1178,8 @@
                 color: #BAE6FD;
             }
             #side-panel {
-                max-height: 72vh !important;
-                max-height: 72svh !important;
+                max-height: 82vh !important;
+                max-height: 82svh !important;
                 padding-bottom: calc(18px + env(safe-area-inset-bottom));
                 border-radius: 20px 20px 0 0 !important;
                 z-index: 1160 !important;
@@ -1203,9 +1203,8 @@
             #panel-toggle.open {
                 display: block;
                 right: 12px !important;
-                bottom: calc(72vh - 50px + env(safe-area-inset-bottom)) !important;
-                bottom: calc(72vh - 50px + env(safe-area-inset-bottom)) !important;
-                bottom: calc(72svh - 50px + env(safe-area-inset-bottom)) !important;
+                bottom: calc(82vh - 50px + env(safe-area-inset-bottom)) !important;
+                bottom: calc(82svh - 50px + env(safe-area-inset-bottom)) !important;
             }
             .panel-section {
                 padding: 14px 16px !important;
@@ -1228,19 +1227,44 @@
                 min-height: 48px !important;
             }
             #search-results {
-                max-height: 42vh !important;
+                max-height: min(28vh, 240px) !important;
+                max-height: min(28svh, 240px) !important;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
             }
             #search-results > div[onclick] {
-                min-height: 64px;
-                padding: 11px 12px !important;
+                min-height: 58px;
+                padding: 9px 12px !important;
+            }
+            #side-panel .panel-section:nth-child(3) {
+                padding-top: 18px !important;
+                border-top: 1px solid rgba(255,255,255,0.1);
+                background: rgba(17, 22, 36, 0.96);
+            }
+            #side-panel .panel-section:nth-child(3) h3 {
+                font-size: 18px !important;
+                margin-bottom: 12px !important;
+            }
+            #filter-chips {
+                min-height: 58px;
+                align-items: center;
+                gap: 10px !important;
+                margin: 0 -4px;
+                padding: 2px 4px 12px !important;
             }
             .chip-row {
                 scroll-snap-type: x proximity;
                 padding-bottom: 10px !important;
             }
             .chip, .branch-chip {
-                min-height: 42px !important;
+                min-height: 46px !important;
                 scroll-snap-align: start;
+            }
+            #filter-chips .chip {
+                min-width: max-content;
+                min-height: 48px !important;
+                padding: 11px 16px !important;
+                font-size: 14px !important;
+                border-width: 2px !important;
             }
             .leaflet-control-zoom {
                 margin-top: 8px !important;
@@ -3737,7 +3761,10 @@ function showSearchResultList(results, options = {}) {
     const visibleMapCount = activeSearchIndexes ? getVisibleSearchResults(results).length : null;
     const mapSuffix = activeSearchIndexes ? ' \u00B7 \uC9C0\uB3C4 ' + visibleMapCount + '\uAC74 \uD45C\uC2DC' : '';
     let html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#9CA3AF;padding:6px 2px 8px;"><span>\uC804\uAD6D \uAC80\uC0C9 \uACB0\uACFC' + suffix + mapSuffix + '</span>'
+        + '<span style="display:inline-flex;gap:5px;flex-shrink:0;">'
+        + '<button type="button" onclick="scrollToMarketFilters()" style="border:1px solid rgba(74,171,219,0.45);background:rgba(74,171,219,0.16);color:#BAE6FD;border-radius:999px;padding:3px 8px;font-size:10px;cursor:pointer;">\uD544\uD130</button>'
         + (activeSearchIndexes ? '<button type="button" onclick="clearSearchMapFilter()" style="border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:#fff;border-radius:999px;padding:3px 8px;font-size:10px;cursor:pointer;">\uC9C0\uB3C4 \uCD08\uAE30\uD654</button>' : '')
+        + '</span>'
         + '</div>';
     if (activeSearchIndexes && visibleMapCount < results.length) {
         html += '<div style="font-size:10px;color:#FBBF24;padding:0 2px 7px;">\uD604\uC7AC \uD544\uD130\uC5D0 \uB9DE\uB294 \uAC80\uC0C9 \uACB0\uACFC\uB9CC \uC9C0\uB3C4\uC5D0 \uD45C\uC2DC\uB429\uB2C8\uB2E4.</div>';
@@ -3760,6 +3787,12 @@ function showSearchResultList(results, options = {}) {
     container.innerHTML = html;
     container.style.display = 'block';
 }
+
+window.scrollToMarketFilters = function() {
+    const chips = document.getElementById('filter-chips');
+    if (!chips) return;
+    chips.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
 
 /* Popup open */
 window.showPopup = function(idx) {
