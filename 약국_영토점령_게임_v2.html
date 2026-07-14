@@ -430,19 +430,6 @@
 .trading-badge.yes{background:rgba(50,205,50,.2);color:#90EE90;border:1px solid #4CAF50;}
 .trading-badge.no {background:rgba(233,69,96,.2);color:#e94560;border:1px solid #e94560;}
 
-/* 인센티브 탭 */
-.inc-tab{display:flex;gap:4px;margin-bottom:10px;}
-.inc-tab-btn{flex:1;padding:5px;border-radius:8px;border:1.5px solid #444;
-  background:transparent;color:#aaa;font-size:11px;font-weight:700;cursor:pointer;
-  font-family:inherit;transition:all .2s;}
-.inc-tab-btn.active{border-color:#e94560;background:rgba(233,69,96,.2);color:#fff;}
-.inc-row{display:flex;justify-content:space-between;font-size:12px;
-  padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);color:#ccc;}
-.inc-val{font-weight:700;color:#FFD700;}
-.inc-val.high{color:#90EE90;}
-.inc-section{margin-top:8px;}
-.inc-label{font-size:10px;color:#777;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
-
 /* 현재거래 토글 팝업 */
 .trade-toggle{display:flex;gap:6px;margin-top:8px;}
 .trade-btn{flex:1;padding:7px;border-radius:8px;border:1.5px solid #444;
@@ -760,73 +747,21 @@
             line-height: 1.45;
             margin-bottom: 12px;
         }
-        .daily-report-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        .daily-report-actions button,
-        .daily-comment-btn {
-            border: 1px solid rgba(74,171,219,0.7);
-            background: rgba(74,171,219,0.20);
-            color: #E0F2FE;
-            border-radius: 8px;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-family: inherit;
-            font-weight: 800;
-            font-size: 12px;
-        }
-        .daily-comment-grid {
+        .map-legend-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 10px;
-        }
-        .daily-comment-card {
-            border: 1px solid rgba(255,255,255,0.10);
-            background: rgba(255,255,255,0.04);
-            border-radius: 10px;
-            padding: 10px;
-            min-width: 0;
-        }
-        .daily-comment-card h4 {
-            font-size: 13px;
-            color: #F9A8D4;
-            margin-bottom: 8px;
-        }
-        .daily-comment-card div {
-            font-size: 12px;
-            color: #D1D5DB;
-            line-height: 1.45;
-            margin-top: 5px;
-        }
-        .daily-comment-label {
-            display: block;
-            font-size: 11px;
-            color: #A5B4FC;
-            font-weight: 800;
-            margin: 10px 0 5px;
-        }
-        .daily-comment-textarea {
-            width: 100%;
-            min-height: 58px;
-            resize: vertical;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.18);
-            border-radius: 8px;
-            color: #fff;
-            padding: 8px 10px;
-            font-size: 12px;
-            font-family: inherit;
-            line-height: 1.45;
-        }
-        .daily-comment-status {
-            min-height: 16px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
             margin-top: 8px;
-            color: #94A3B8;
+        }
+        .map-legend-item {
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 7px 6px;
+            color: #D1D5DB;
             font-size: 11px;
-            line-height: 1.4;
+            font-weight: 800;
+            text-align: center;
         }
 
 
@@ -892,7 +827,7 @@
             text-transform: none;
             margin-bottom: 12px;
         }
-        .stat-row, .inc-row, .rank-row {
+        .stat-row, .rank-row {
             font-size: 14px;
             line-height: 1.45;
         }
@@ -1442,7 +1377,7 @@
 <div id="map"></div>
 <!-- MOBILE QUICK SEARCH -->
 <div id="mobile-search-dock" aria-label="Mobile quick pharmacy search">
-    <input type="text" id="mobile-search-input" placeholder="&#50557;&#44397;&#47749;&middot;&#44396;&middot;&#46041; &#44160;&#49353;" autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter') mobileSearchPharmacy()">
+    <input type="text" id="mobile-search-input" placeholder="약국명·주소·구·동 검색" autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter') mobileSearchPharmacy()">
     <button type="button" onclick="mobileSearchPharmacy()">&#44160;&#49353;</button>
     <button type="button" onclick="openMobileFilters()">&#54596;&#53552;</button>
 </div>
@@ -1451,7 +1386,7 @@
 <div id="setup-panel">
     <div class="setup-box">
         <h2>🗺️ 더마화장품 영업 게임</h2>
-        <p class="subtitle">입점 완료한 약국을 클릭해서 내 영역으로 점령하세요! 앱 입력 = 공식 일일보고입니다.</p>
+        <p class="subtitle">약국을 검색하고 지도에서 위치를 확인한 뒤 점령 상태를 입력하세요.</p>
 
         <label style="font-size:14px;color:#ccc;display:block;margin-bottom:8px;font-weight:700;">📍 내 지점을 선택하세요</label>
         <select id="branch-select" class="my-select" onchange="onBranchSelected()" style="margin-bottom:12px;font-size:14px;padding:12px;">
@@ -1480,7 +1415,7 @@
 
         <button class="btn-start" id="btn-game-start" onclick="startGameMulti()" disabled style="opacity:0.5;cursor:not-allowed;">🚀 게임 시작!</button>
 
-        <p style="text-align:center;font-size:11px;color:#8FBCE8;margin-top:14px;"><span id="storage-note">🌐 온라인 모드: 실시간 공유 · 앱 입력 = 공식 일일보고</span></p>
+        <p style="text-align:center;font-size:11px;color:#8FBCE8;margin-top:14px;"><span id="storage-note">🌐 온라인 모드: 점령 현황 실시간 공유</span></p>
 
         <div id="master-login-section">
             <button type="button" class="btn-start" style="background:linear-gradient(135deg,#6c3483,#9b59b6);font-size:14px;padding:10px;" onclick="toggleMasterLoginForm()">🛡️ 마스터 관리자 로그인</button>
@@ -1505,20 +1440,6 @@
     </div>
     <div id="master-dash-email" style="font-size:12px;color:#888;margin-bottom:12px;"></div>
     <div class="master-stat-grid" id="master-stat-grid"></div>
-    <div class="master-section-card" style="margin-bottom:16px;">
-        <h3>일일 자동 요약 <span id="master-daily-date" style="color:#94A3B8;font-size:12px;"></span></h3>
-        <div class="official-report-note">앱 입력 = 공식 일일보고입니다. 숫자 보고는 점령/점령불가/3종 세트 변경 데이터에서 자동 계산하고, 사람은 정성 이슈와 본사 지원 요청만 남깁니다.</div>
-        <div class="daily-report-actions">
-            <button type="button" onclick="exportDailyReportCsv()">일일 요약 CSV</button>
-            <button type="button" onclick="exportDailyReportText()">일일 요약 텍스트</button>
-        </div>
-        <div class="master-table-wrap"><table class="master-table" id="master-table-daily-branches"><thead><tr><th>지점</th><th>방문</th><th>점령</th><th>점령불가</th><th>3종 세트</th><th>우선 방문</th><th>우선 점령</th><th>앱 입력</th><th>불가 TOP3</th></tr></thead><tbody></tbody></table></div>
-        <h3>담당자별 앱 입력 현황</h3>
-        <div class="master-table-wrap"><table class="master-table" id="master-table-daily-managers"><thead><tr><th>지점</th><th>담당자</th><th>금일 점령</th><th>앱 입력</th><th>상태</th></tr></thead><tbody></tbody></table></div>
-        <h3>지점 일일 코멘트</h3>
-        <div id="master-daily-comments" class="daily-comment-grid"></div>
-        <div class="master-mini-note">방문/앱 입력은 오늘 앱에서 점령, 점령불가, 3종 세트 변경 등 상태 입력이 발생한 약국 기준입니다.</div>
-    </div>
     <div class="master-section-grid">
         <div class="master-section-card">
             <h3>우선 선점 진행</h3>
@@ -1566,7 +1487,12 @@
     <!-- MY STATUS -->
     <div class="panel-section" id="my-status-section" style="display:none;">
         <h3>⚔️ 내 현황</h3>
-        <div class="official-report-note">앱 입력 = 공식 일일보고<br>숫자 보고는 자동 집계됩니다.</div>
+        <div class="official-report-note">핵심 기능: 약국 검색 · 위치 확인 · 점령/미점령 확인</div>
+        <div class="map-legend-row">
+            <div class="map-legend-item"><span style="color:#60A5FA;">●</span> 미점령</div>
+            <div class="map-legend-item"><span style="color:#86EFAC;">●</span> 점령</div>
+            <div class="map-legend-item"><span style="color:#CBD5E1;">●</span> 점령불가</div>
+        </div>
         <div class="stat-row">
             <span>내 점령 약국</span>
             <span class="stat-val" id="stat-mine">0</span>
@@ -1594,7 +1520,7 @@
     <div class="panel-section" style="padding-top:12px; padding-bottom:4px;">
         <h3 style="margin-bottom:8px;">🔎 약국 검색</h3>
         <div style="display:flex; gap:6px;">
-            <input type="text" id="search-input" placeholder="&#50557;&#44397;&#47749;&middot;&#49884;/&#46020;&middot;&#44396;&middot;&#46041; &#44160;&#49353;" oninput="showSearchSuggestions()" onkeydown="if(event.key==='Enter') searchPharmacy()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid #555; border-radius:6px; padding:6px 10px; color:#fff; font-size:13px; font-family:inherit;">
+            <input type="text" id="search-input" placeholder="약국명·주소·시·구·동 검색" oninput="showSearchSuggestions()" onkeydown="if(event.key==='Enter') searchPharmacy()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid #555; border-radius:6px; padding:6px 10px; color:#fff; font-size:13px; font-family:inherit;">
             <button onclick="searchPharmacy()" style="padding:6px 12px; background:#4AABDB; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px;">검색</button>
         </div>
         <div id="search-results" style="max-height:200px; overflow-y:auto; margin-top:4px; display:none;"></div>
@@ -1632,30 +1558,6 @@
             <div class="branch-chip active" data-branch="all" onclick="setBranchFilter('all')" style="background:rgba(255,215,0,.35);border-color:#fff;">전체</div>
             <div class="branch-chip" data-branch="경남영업지점" onclick="setBranchFilter('경남영업지점')">경남영업지점</div><div class="branch-chip" data-branch="경북영업지점" onclick="setBranchFilter('경북영업지점')">경북영업지점</div><div class="branch-chip" data-branch="서부영업지점" onclick="setBranchFilter('서부영업지점')">서부영업지점</div><div class="branch-chip" data-branch="수도권1지점" onclick="setBranchFilter('수도권1지점')">수도권1지점</div><div class="branch-chip" data-branch="수도권2지점" onclick="setBranchFilter('수도권2지점')">수도권2지점</div><div class="branch-chip" data-branch="수도권3지점" onclick="setBranchFilter('수도권3지점')">수도권3지점</div><div class="branch-chip" data-branch="중부영업지점" onclick="setBranchFilter('중부영업지점')">중부영업지점</div><div class="branch-chip" data-branch="기타" onclick="setBranchFilter('기타')">기타</div>
         </div>
-    </div>
-
-    <div class="panel-section" id="daily-comment-section" style="display:none;">
-        <h3>📝 지점 일일 코멘트</h3>
-        <div style="font-size:11px;color:#94A3B8;line-height:1.45;margin-bottom:8px;">별도 숫자 보고는 하지 않고, 아래 정성 이슈만 저장하세요.</div>
-        <label class="daily-comment-label" for="daily-comment-issue">오늘 가장 큰 영업 이슈</label>
-        <textarea id="daily-comment-issue" class="daily-comment-textarea" maxlength="300" placeholder="예: 담당자 부재, 가격 문의 집중"></textarea>
-        <label class="daily-comment-label" for="daily-comment-tomorrow">내일 우선 처리할 약국/지역</label>
-        <textarea id="daily-comment-tomorrow" class="daily-comment-textarea" maxlength="300" placeholder="예: 광진구 구의동 우선 방문"></textarea>
-        <label class="daily-comment-label" for="daily-comment-support">본사 지원 요청</label>
-        <textarea id="daily-comment-support" class="daily-comment-textarea" maxlength="300" placeholder="예: 샘플/자료/가격 정책 확인"></textarea>
-        <button type="button" class="daily-comment-btn" onclick="saveDailyBranchComment()">코멘트 저장</button>
-        <div id="daily-comment-status" class="daily-comment-status"></div>
-    </div>
-
-    <!-- 인센티브 통계 -->
-    <div class="panel-section" id="incentive-section" style="display:none;">
-        <h3>🏆 인센티브 현황</h3>
-        <div class="inc-tab">
-            <button class="inc-tab-btn active" onclick="setIncTab('month')">이번 달</button>
-            <button class="inc-tab-btn" onclick="setIncTab('quarter')">이번 분기</button>
-            <button class="inc-tab-btn" onclick="setIncTab('total')">누적</button>
-        </div>
-        <div id="inc-content"></div>
     </div>
 
 <!-- LEADERBOARD -->
@@ -1830,9 +1732,6 @@ function startGame() {
     document.getElementById('current-player-badge').style.display = 'flex';
     document.getElementById('my-score-badge').style.display = 'block';
     document.getElementById('my-status-section').style.display = 'block';
-    updateDailyCommentSection();
-    loadMyDailyComment();
-
     refreshAllMarkers();
     updateLeaderboard();
     updateMyStats();
@@ -1898,14 +1797,15 @@ function initMap() {
         const claimed = isClaimedState(state);
         const unavailable = isUnavailableState(state);
         const baseColor = getBaseColor(pharm.market_type);
-        const color = unavailable ? '#9CA3AF' : claimed ? state.color : (pharm.priority_target ? '#FFD166' : baseColor);
-        const opacity = unavailable ? 0.45 : claimed ? 0.95 : (pharm.priority_target ? 0.9 : 0.65);
-        const radius = unavailable ? 7 : claimed ? 9 : (pharm.priority_target ? 10 : 6);
-        const weight = unavailable ? 3 : claimed ? 3 : (pharm.priority_target ? 4 : 1.5);
+        const color = unavailable ? '#94A3B8' : claimed ? '#FFFFFF' : (pharm.priority_target ? '#FFD166' : baseColor);
+        const fillColor = unavailable ? '#1F2937' : claimed ? state.color : '#111827';
+        const opacity = unavailable ? 0.55 : claimed ? 0.98 : (pharm.priority_target ? 0.92 : 0.82);
+        const radius = unavailable ? 7 : claimed ? (pharm.priority_target ? 12 : 10) : (pharm.priority_target ? 10 : 7);
+        const weight = unavailable ? 3 : claimed ? 4 : (pharm.priority_target ? 4 : 3);
 
         const marker = L.circleMarker([pharm.lat, pharm.lng], {
             color: color,
-            fillColor: color,
+            fillColor: fillColor,
             fillOpacity: opacity,
             radius: radius,
             weight: weight
@@ -2019,15 +1919,15 @@ function buildPopup(idx) {
 
     const claimedHTML = isClaimed
         ? `<div class="claim-status claimed">
-            <div style="font-size:16px;margin-bottom:2px;">🚩</div>
-            <div style="font-weight:700;color:${state.color};">${formatPlayerName(state.claimed_by)}</div>
-            <div style="font-size:10px;color:#888;">${new Date(state.claimed_at).toLocaleDateString('ko-KR')}</div>
+            <div style="font-size:12px;color:#86EFAC;font-weight:900;margin-bottom:3px;">점령 완료</div>
+            <div style="font-weight:900;color:${state.color};">${formatPlayerName(state.claimed_by)}</div>
+            <div style="font-size:10px;color:#A7F3D0;margin-top:2px;">${new Date(state.claimed_at).toLocaleDateString('ko-KR')}</div>
            </div>`
         : isUnavailable
         ? `<div class="claim-status unclaimed" style="border-color:#9CA3AF;color:#CBD5E1;">
-            🚫 점령불가<br><span style="font-size:11px;color:#aaa;">사유: ${state.unavailable_reason || '-'}</span>
+            <strong>점령불가</strong><br><span style="font-size:11px;color:#aaa;">사유: ${state.unavailable_reason || '-'}</span>
            </div>`
-        : `<div class="claim-status unclaimed">⬜ 미점령 구역</div>`;
+        : `<div class="claim-status unclaimed" style="border:1px solid rgba(250,204,21,0.45);color:#FDE68A;"><strong>미점령</strong><br><span style="font-size:11px;color:#CBD5E1;">방문 후 점령 가능</span></div>`;
 
     let btnHTML = '';
     if (window._isMasterAdmin) {
@@ -2067,7 +1967,8 @@ function buildPopup(idx) {
         <div class="pharmacy-name">${pharm.name}</div>
         <div class="pharmacy-meta">
             <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;">${marketBadge}${priorityBadge}</div>
-            📍 ${pharm.address.substring(0, 50)}${pharm.address.length > 50 ? '...' : ''}<br>
+            📍 ${pharm.address}<br>
+            🧭 ${[pharm.region, pharm.district, getPharmacyDong(pharm)].filter(Boolean).join(' ')}<br>
             📞 ${pharm.phone || '-'}
         </div>
         ${claimedHTML}
@@ -2091,7 +1992,6 @@ function claimPharmacy(idx) {
         color: player.color,
         claimed_at: now
     });
-    recordLocalInput(idx, gameState.currentPlayer, now);
 
     saveState();
     refreshMarker(idx);
@@ -2128,7 +2028,6 @@ function markUnavailablePharmacy(idx) {
         updated_by: gameState.currentPlayer,
         updated_at: now
     });
-    recordLocalInput(idx, gameState.currentPlayer, now);
 
     saveState();
     refreshMarker(idx);
@@ -2141,7 +2040,6 @@ function markUnavailablePharmacy(idx) {
 }
 
 function unclaimPharmacy(idx) {
-    recordLocalInput(idx, gameState.currentPlayer, new Date().toISOString());
     deleteStateByIndex(idx);
     saveState();
     refreshMarker(idx);
@@ -2153,7 +2051,6 @@ function unclaimPharmacy(idx) {
 
 function masterAdminUnclaim(idx) {
     if (!window._isMasterAdmin) return;
-    recordLocalInput(idx, 'master-admin', new Date().toISOString());
     deleteStateByIndex(idx);
     const p = PHARMACY_DATA[idx];
     if (p) { p.claimed_by = null; p.claimed_at = null; }
@@ -2175,36 +2072,36 @@ function refreshMarker(idx) {
 
     if (isUnavailableState(state)) {
         m.setStyle({
-            color: '#9CA3AF',
-            fillColor: '#111827',
-            fillOpacity: 0.45,
+            color: '#94A3B8',
+            fillColor: '#1F2937',
+            fillOpacity: 0.55,
             radius: 7,
             weight: 3
         });
     } else if (isClaimedState(state)) {
         m.setStyle({
-            color: state.color,
+            color: '#FFFFFF',
             fillColor: state.color,
-            fillOpacity: 0.95,
-            radius: pharm.priority_target ? 11 : 9,
-            weight: pharm.priority_target ? 4 : 3
+            fillOpacity: 0.98,
+            radius: pharm.priority_target ? 12 : 10,
+            weight: 4
         });
     } else {
         const base = getBaseColor(pharm.market_type);
         m.setStyle({
             color: pharm.priority_target ? '#FFD166' : base,
-            fillColor: base,
-            fillOpacity: pharm.priority_target ? 0.9 : 0.65,
-            radius: pharm.priority_target ? 10 : 6,
-            weight: pharm.priority_target ? 4 : 1.5
+            fillColor: '#111827',
+            fillOpacity: pharm.priority_target ? 0.92 : 0.82,
+            radius: pharm.priority_target ? 10 : 7,
+            weight: pharm.priority_target ? 4 : 3
         });
     }
 
     if (activeSearchIndexes && activeSearchIndexes.has(idx)) {
         m.setStyle({
-            color: '#FFFFFF',
-            radius: Math.max(m.options.radius || 8, 12),
-            weight: 5,
+            color: '#FDE68A',
+            radius: Math.max(m.options.radius || 8, 13),
+            weight: 6,
             fillOpacity: Math.max(m.options.fillOpacity || 0.7, 0.9)
         });
     }
@@ -2767,10 +2664,6 @@ function syncFirebasePharmacyRowToGameState(i, row) {
     if (!p) return;
     row = row || {};
     if (row.hasOwnProperty('is_trading')) p.is_trading = row.is_trading;
-    if (row.last_input_at) p.last_input_at = row.last_input_at;
-    if (row.last_input_by) p.last_input_by = row.last_input_by;
-    if (row.trading_updated_at) p.trading_updated_at = row.trading_updated_at;
-    if (row.trading_updated_by) p.trading_updated_by = row.trading_updated_by;
 
     var status = row.status || (row.claimed_by ? 'claimed' : null);
     if (status === 'unavailable') {
@@ -2885,7 +2778,6 @@ async function startFirebaseListener() {
             saveState();
             updateLeaderboard();
             updateMyStats();
-            if (typeof updateIncentive === 'function') updateIncentive();
             if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
         }
     }, function(err) {
@@ -2907,10 +2799,8 @@ async function startFirebaseListener() {
             gameState.players[pid].color = fbp[pid].color || gameState.players[pid].color || '#B22222';
             gameState.players[pid].branch = fbp[pid].branch || gameState.players[pid].branch;
             gameState.players[pid].joined_at = fbp[pid].joined_at || gameState.players[pid].joined_at;
-            gameState.players[pid].dailyComments = fbp[pid].dailyComments || gameState.players[pid].dailyComments || {};
         });
         updateLeaderboard();
-        if (typeof loadMyDailyComment === 'function') loadMyDailyComment();
         if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
     }, function(err) {
         if (isFirebasePermissionError(err)) {
@@ -2939,8 +2829,6 @@ async function saveToFirebase(idx) {
     updates[base + '/updated_by'] = isUnavailableState(st) ? st.updated_by : null;
     updates[base + '/updated_at'] = isUnavailableState(st) ? st.updated_at : null;
     updates[base + '/is_trading'] = !!pharm.is_trading;
-    updates[base + '/last_input_at'] = pharm.last_input_at || (isClaimedState(st) ? st.claimed_at : (isUnavailableState(st) ? st.updated_at : new Date().toISOString()));
-    updates[base + '/last_input_by'] = pharm.last_input_by || (isClaimedState(st) ? st.claimed_by : (isUnavailableState(st) ? st.updated_by : gameState.currentPlayer || ''));
     pharm.claimed_by = isClaimedState(st) ? st.claimed_by : null;
     pharm.claimed_at = isClaimedState(st) ? st.claimed_at : null;
     try { await imp.update(imp.ref(_db), updates); }
@@ -2986,374 +2874,6 @@ function percentText(part, total) {
 function masterProgressBar(pct) {
     var width = Math.max(0, Math.min(100, Number(pct) || 0));
     return '<div class="master-bar-wrap"><div class="master-bar-fill" style="width:' + width.toFixed(1) + '%"></div></div>';
-}
-
-function getKoreaDateKey(value) {
-    var d = value ? new Date(value) : new Date();
-    if (isNaN(d.getTime())) return '';
-    var kst = new Date(d.getTime() + (9 * 60 * 60 * 1000));
-    return kst.toISOString().slice(0, 10);
-}
-
-function isTodayKorea(value, todayKey) {
-    if (!value) return false;
-    return getKoreaDateKey(value) === (todayKey || getKoreaDateKey());
-}
-
-function getSalesBranchNames(includeEtc) {
-    return Object.keys(BRANCH_CONFIG || {}).filter(function(branch) {
-        return includeEtc || branch !== '기타';
-    });
-}
-
-function getPlayerBranchFromName(name) {
-    var player = (gameState.players || {})[name];
-    if (player && player.branch) return player.branch;
-    if (name && String(name).indexOf('_') > -1) return String(name).split('_')[0];
-    return '';
-}
-
-function getPlayerManagerName(name) {
-    if (!name) return '';
-    var raw = String(name);
-    return raw.indexOf('_') > -1 ? raw.split('_').slice(1).join('_') : raw;
-}
-
-function getDailyCommentForPlayer(playerName, dateKey) {
-    var player = (gameState.players || {})[playerName];
-    return player && player.dailyComments ? player.dailyComments[dateKey] : null;
-}
-
-function recordLocalInput(idx, actor, at) {
-    var p = PHARMACY_DATA[idx];
-    if (!p) return;
-    p.last_input_at = at || new Date().toISOString();
-    p.last_input_by = actor || gameState.currentPlayer || '';
-}
-
-function buildDailyReportSummary(dateKey) {
-    var today = dateKey || getKoreaDateKey();
-    var branches = {};
-    getSalesBranchNames(false).forEach(function(branch) {
-        branches[branch] = {
-            branch: branch,
-            visited: 0,
-            claimed: 0,
-            unavailable: 0,
-            trading: 0,
-            priorityVisited: 0,
-            priorityClaimed: 0,
-            appInputs: 0,
-            unavailableReasons: {}
-        };
-    });
-
-    var managers = {};
-    function ensureBranch(branch) {
-        var key = branches[branch] ? branch : '기타';
-        if (!branches[key]) {
-            branches[key] = {
-                branch: key,
-                visited: 0,
-                claimed: 0,
-                unavailable: 0,
-                trading: 0,
-                priorityVisited: 0,
-                priorityClaimed: 0,
-                appInputs: 0,
-                unavailableReasons: {}
-            };
-        }
-        return branches[key];
-    }
-    function ensureManager(playerName, branch) {
-        if (!playerName) return null;
-        if (!managers[playerName]) {
-            managers[playerName] = {
-                playerName: playerName,
-                branch: branch || getPlayerBranchFromName(playerName) || '기타',
-                manager: getPlayerManagerName(playerName),
-                claimed: 0,
-                appInputs: 0,
-                joinedToday: false
-            };
-        }
-        return managers[playerName];
-    }
-
-    Object.keys(gameState.players || {}).forEach(function(playerName) {
-        var player = gameState.players[playerName] || {};
-        var branch = player.branch || getPlayerBranchFromName(playerName) || '기타';
-        var row = ensureManager(playerName, branch);
-        if (row && isTodayKorea(player.joined_at || player.joinedAt, today)) row.joinedToday = true;
-    });
-
-    PHARMACY_DATA.forEach(function(ph, idx) {
-        var key = getPharmacyKey(idx);
-        var st = getStateByIndex(key);
-        var inputAt = ph.last_input_at || (isClaimedState(st) ? st.claimed_at : isUnavailableState(st) ? st.updated_at : null);
-        var tradingAt = ph.trading_updated_at || null;
-        var actor = ph.last_input_by || (st && (st.claimed_by || st.updated_by)) || '';
-        var branch = getPlayerBranchFromName(actor) || ph.branch || '기타';
-        var branchRow = ensureBranch(branch);
-        var hasTodayInput = isTodayKorea(inputAt, today);
-        var hasTodayTrade = isTodayKorea(tradingAt, today);
-
-        if (hasTodayInput || hasTodayTrade) {
-            branchRow.visited += 1;
-            branchRow.appInputs += 1;
-            if (ph.priority_target) branchRow.priorityVisited += 1;
-            var managerRow = ensureManager(actor, branch);
-            if (managerRow) managerRow.appInputs += 1;
-        }
-        if (isClaimedState(st) && isTodayKorea(st.claimed_at, today)) {
-            var claimBranch = getPlayerBranchFromName(st.claimed_by) || branch;
-            var claimBranchRow = ensureBranch(claimBranch);
-            claimBranchRow.claimed += 1;
-            if (ph.priority_target) claimBranchRow.priorityClaimed += 1;
-            var claimManager = ensureManager(st.claimed_by, claimBranch);
-            if (claimManager) claimManager.claimed += 1;
-        }
-        if (isUnavailableState(st) && isTodayKorea(st.updated_at, today)) {
-            var unavailableBranch = getPlayerBranchFromName(st.updated_by) || branch;
-            var unavailableBranchRow = ensureBranch(unavailableBranch);
-            unavailableBranchRow.unavailable += 1;
-            var reason = String(st.unavailable_reason || '미입력').trim() || '미입력';
-            unavailableBranchRow.unavailableReasons[reason] = (unavailableBranchRow.unavailableReasons[reason] || 0) + 1;
-        }
-        if (ph.is_trading && hasTodayTrade) {
-            var tradingBranch = getPlayerBranchFromName(ph.trading_updated_by) || branch;
-            ensureBranch(tradingBranch).trading += 1;
-        }
-    });
-
-    var comments = [];
-    Object.keys(gameState.players || {}).forEach(function(playerName) {
-        var comment = getDailyCommentForPlayer(playerName, today);
-        if (!comment) return;
-        comments.push({
-            branch: comment.branch || getPlayerBranchFromName(playerName) || '기타',
-            author: comment.author || getPlayerManagerName(playerName),
-            issue: comment.issue || '',
-            tomorrow: comment.tomorrow || '',
-            support: comment.support || '',
-            updated_at: comment.updated_at || comment.created_at || ''
-        });
-    });
-    comments.sort(function(a, b) {
-        return String(a.branch).localeCompare(String(b.branch), 'ko') || String(a.author).localeCompare(String(b.author), 'ko');
-    });
-
-    return {
-        dateKey: today,
-        branches: Object.values(branches).sort(function(a, b) {
-            return getSalesBranchNames(true).indexOf(a.branch) - getSalesBranchNames(true).indexOf(b.branch);
-        }),
-        managers: Object.values(managers).sort(function(a, b) {
-            return String(a.branch).localeCompare(String(b.branch), 'ko') || String(a.manager).localeCompare(String(b.manager), 'ko');
-        }),
-        comments: comments
-    };
-}
-
-function renderDailyReportDashboard() {
-    var report = buildDailyReportSummary();
-    var dateEl = document.getElementById('master-daily-date');
-    if (dateEl) dateEl.textContent = report.dateKey;
-
-    var branchBody = document.querySelector('#master-table-daily-branches tbody');
-    if (branchBody) {
-        branchBody.innerHTML = report.branches.map(function(row) {
-            var topReasons = Object.entries(row.unavailableReasons).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
-            var reasonText = topReasons.map(function(x) { return x[0] + ' ' + x[1]; }).join(', ') || '-';
-            return '<tr><td>' + escapeMasterHtml(row.branch) + '</td><td>' + row.visited + '</td><td>' + row.claimed + '</td><td>' + row.unavailable + '</td><td>' + row.trading + '</td><td>' + row.priorityVisited + '</td><td>' + row.priorityClaimed + '</td><td>' + row.appInputs + '</td><td>' + escapeMasterHtml(reasonText) + '</td></tr>';
-        }).join('');
-    }
-
-    var managerBody = document.querySelector('#master-table-daily-managers tbody');
-    if (managerBody) {
-        managerBody.innerHTML = report.managers.map(function(row) {
-            var status = row.appInputs > 0 ? '완료' : (row.joinedToday ? '미완료' : '미입력');
-            var statusColor = row.appInputs > 0 ? '#86EFAC' : (row.joinedToday ? '#FDE68A' : '#FCA5A5');
-            return '<tr><td>' + escapeMasterHtml(row.branch) + '</td><td>' + escapeMasterHtml(row.manager) + '</td><td>' + row.claimed + '</td><td>' + row.appInputs + '</td><td style="color:' + statusColor + ';font-weight:800;">' + status + '</td></tr>';
-        }).join('') || '<tr><td colspan="5" style="color:#666;">오늘 참여자 또는 입력 데이터가 없습니다</td></tr>';
-    }
-
-    var commentsBox = document.getElementById('master-daily-comments');
-    if (commentsBox) {
-        var byBranchComment = {};
-        report.comments.forEach(function(c) {
-            if (!byBranchComment[c.branch]) byBranchComment[c.branch] = [];
-            byBranchComment[c.branch].push(c);
-        });
-        var branchCards = getSalesBranchNames(false).map(function(branch) {
-            var items = byBranchComment[branch] || [];
-            if (!items.length) {
-                return '<div class="daily-comment-card"><h4>' + escapeMasterHtml(branch) + '</h4><div style="color:#94A3B8;">오늘 코멘트 미작성</div></div>';
-            }
-            var body = items.map(function(c) {
-                var timeText = c.updated_at ? new Date(c.updated_at).toLocaleString('ko-KR') : '-';
-                return '<div><strong>' + escapeMasterHtml(c.author) + '</strong></div>' +
-                    '<div><strong>이슈</strong><br>' + escapeMasterHtml(c.issue || '-') + '</div>' +
-                    '<div><strong>내일 우선</strong><br>' + escapeMasterHtml(c.tomorrow || '-') + '</div>' +
-                    '<div><strong>본사 지원</strong><br>' + escapeMasterHtml(c.support || '-') + '</div>' +
-                    '<div style="color:#94A3B8;font-size:11px;">작성/수정: ' + escapeMasterHtml(timeText) + '</div>';
-            }).join('<div style="border-top:1px solid rgba(255,255,255,0.10);margin-top:8px;padding-top:8px;"></div>');
-            return '<div class="daily-comment-card"><h4>' + escapeMasterHtml(branch) + '</h4>' + body + '</div>';
-        });
-        var etcItems = (byBranchComment['기타'] || []).map(function(c) {
-            var timeText = c.updated_at ? new Date(c.updated_at).toLocaleString('ko-KR') : '-';
-            return '<div class="daily-comment-card"><h4>기타 · ' + escapeMasterHtml(c.author) + '</h4>' +
-                '<div><strong>이슈</strong><br>' + escapeMasterHtml(c.issue || '-') + '</div>' +
-                '<div><strong>내일 우선</strong><br>' + escapeMasterHtml(c.tomorrow || '-') + '</div>' +
-                '<div><strong>본사 지원</strong><br>' + escapeMasterHtml(c.support || '-') + '</div>' +
-                '<div style="color:#94A3B8;font-size:11px;">작성/수정: ' + escapeMasterHtml(timeText) + '</div></div>';
-        });
-        commentsBox.innerHTML = branchCards.concat(etcItems).join('');
-    }
-}
-
-function csvEscape(value) {
-    var text = String(value == null ? '' : value).replace(/"/g, '""');
-    return '"' + text + '"';
-}
-
-function downloadTextFile(filename, content, mime) {
-    var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
-}
-
-function exportDailyReportCsv() {
-    var report = buildDailyReportSummary();
-    var lines = [];
-    lines.push(['구분','지점','담당자','방문','점령','점령불가','3종세트','우선방문','우선점령','앱입력','상태','이슈','내일우선','본사지원','작성시간'].map(csvEscape).join(','));
-    report.branches.forEach(function(r) {
-        lines.push(['지점요약', r.branch, '', r.visited, r.claimed, r.unavailable, r.trading, r.priorityVisited, r.priorityClaimed, r.appInputs, '', '', '', '', ''].map(csvEscape).join(','));
-    });
-    report.managers.forEach(function(r) {
-        var status = r.appInputs > 0 ? '완료' : (r.joinedToday ? '미완료' : '미입력');
-        lines.push(['담당자현황', r.branch, r.manager, '', r.claimed, '', '', '', '', r.appInputs, status, '', '', '', ''].map(csvEscape).join(','));
-    });
-    report.comments.forEach(function(c) {
-        lines.push(['지점코멘트', c.branch, c.author, '', '', '', '', '', '', '', '', c.issue, c.tomorrow, c.support, c.updated_at].map(csvEscape).join(','));
-    });
-    downloadTextFile('일일자동보고_' + report.dateKey + '.csv', '\uFEFF' + lines.join('\n'), 'text/csv;charset=utf-8');
-    showToast('일일 보고 CSV를 다운로드했습니다.');
-}
-
-function exportDailyReportText() {
-    var report = buildDailyReportSummary();
-    var lines = ['[앱 입력 = 공식 일일보고]', '날짜: ' + report.dateKey, ''];
-    lines.push('■ 지점별 자동 요약');
-    report.branches.forEach(function(r) {
-        lines.push('- ' + r.branch + ': 방문 ' + r.visited + ', 점령 ' + r.claimed + ', 점령불가 ' + r.unavailable + ', 3종 세트 ' + r.trading + ', 우선방문 ' + r.priorityVisited + ', 우선점령 ' + r.priorityClaimed + ', 앱입력 ' + r.appInputs);
-        var topReasons = Object.entries(r.unavailableReasons).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
-        if (topReasons.length) lines.push('  점령불가 TOP3: ' + topReasons.map(function(x) { return x[0] + ' ' + x[1] + '건'; }).join(', '));
-    });
-    lines.push('', '■ 담당자별 입력 현황');
-    report.managers.forEach(function(r) {
-        var status = r.appInputs > 0 ? '완료' : (r.joinedToday ? '미완료' : '미입력');
-        lines.push('- ' + r.branch + ' / ' + r.manager + ': 점령 ' + r.claimed + ', 앱입력 ' + r.appInputs + ', ' + status);
-    });
-    lines.push('', '■ 지점 일일 코멘트');
-    if (!report.comments.length) lines.push('- 저장된 코멘트 없음');
-    report.comments.forEach(function(c) {
-        lines.push('- ' + c.branch + ' / ' + c.author);
-        lines.push('  이슈: ' + (c.issue || '-'));
-        lines.push('  내일 우선: ' + (c.tomorrow || '-'));
-        lines.push('  본사 지원: ' + (c.support || '-'));
-    });
-    downloadTextFile('일일자동보고_' + report.dateKey + '.txt', lines.join('\n'), 'text/plain;charset=utf-8');
-    showToast('일일 보고 텍스트를 다운로드했습니다.');
-}
-
-function updateDailyCommentSection() {
-    var section = document.getElementById('daily-comment-section');
-    if (!section) return;
-    section.style.display = gameState.currentPlayer && !window._isMasterAdmin ? 'block' : 'none';
-}
-
-function loadMyDailyComment() {
-    if (!gameState.currentPlayer) return;
-    updateDailyCommentSection();
-    var dateKey = getKoreaDateKey();
-    var comment = getDailyCommentForPlayer(gameState.currentPlayer, dateKey);
-    var issue = document.getElementById('daily-comment-issue');
-    var tomorrow = document.getElementById('daily-comment-tomorrow');
-    var support = document.getElementById('daily-comment-support');
-    var status = document.getElementById('daily-comment-status');
-    if (comment) {
-        if (issue) issue.value = comment.issue || '';
-        if (tomorrow) tomorrow.value = comment.tomorrow || '';
-        if (support) support.value = comment.support || '';
-        if (status) status.textContent = '오늘 저장된 코멘트를 불러왔습니다. 수정 후 다시 저장할 수 있습니다.';
-    } else if (status) {
-        status.textContent = '오늘 코멘트는 아직 저장되지 않았습니다.';
-    }
-}
-
-async function saveDailyBranchComment() {
-    if (!gameState.currentPlayer) {
-        showSetup();
-        return;
-    }
-    var dateKey = getKoreaDateKey();
-    var branch = getPlayerBranchFromName(gameState.currentPlayer) || '기타';
-    var author = getPlayerManagerName(gameState.currentPlayer);
-    var now = new Date().toISOString();
-    var comment = {
-        date: dateKey,
-        branch: branch,
-        author: author,
-        playerId: gameState.currentPlayer,
-        issue: (document.getElementById('daily-comment-issue')?.value || '').trim(),
-        tomorrow: (document.getElementById('daily-comment-tomorrow')?.value || '').trim(),
-        support: (document.getElementById('daily-comment-support')?.value || '').trim(),
-        updated_at: now
-    };
-    if (!comment.issue && !comment.tomorrow && !comment.support) {
-        showToast('코멘트 내용을 하나 이상 입력해주세요.');
-        return;
-    }
-    if (!gameState.players[gameState.currentPlayer]) {
-        gameState.players[gameState.currentPlayer] = { color: '#B22222', branch: branch };
-    }
-    if (!gameState.players[gameState.currentPlayer].dailyComments) {
-        gameState.players[gameState.currentPlayer].dailyComments = {};
-    }
-    var previous = gameState.players[gameState.currentPlayer].dailyComments[dateKey];
-    comment.created_at = previous && previous.created_at ? previous.created_at : now;
-    gameState.players[gameState.currentPlayer].dailyComments[dateKey] = comment;
-    saveState();
-
-    var status = document.getElementById('daily-comment-status');
-    if (status) status.textContent = '저장 중...';
-
-    if (_gameMode === 'online' && _db && window._fbImports) {
-        try {
-            if (!await ensureFirebaseAuth()) throw { message: 'Firebase 인증 실패' };
-            var imp = window._fbImports;
-            var base = 'rooms/' + _roomId + '/players/' + gameState.currentPlayer + '/dailyComments/' + dateKey;
-            await imp.update(imp.ref(_db, base), comment);
-            if (status) status.textContent = '저장 완료 · 관리자 대시보드에 실시간 반영됩니다.';
-            showToast('지점 코멘트 저장 완료');
-        } catch (e) {
-            if (isFirebasePermissionError(e)) enterLocalSyncFallback(e);
-            if (status) status.textContent = '로컬에는 저장됐지만 온라인 동기화가 되지 않았습니다.';
-            console.error('Daily comment save error:', e);
-        }
-    } else {
-        if (status) status.textContent = '로컬에 저장되었습니다. 온라인 동기화 상태를 확인해주세요.';
-        showToast('지점 코멘트 로컬 저장');
-    }
-    if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
 }
 
 function refreshMasterDashboard() {
@@ -3488,7 +3008,6 @@ function refreshMasterDashboard() {
             return '<tr><td>' + escapeMasterHtml(branch) + '</td><td>' + stats.claimed.toLocaleString() + '</td><td>' + stats.unavailable.toLocaleString() + '</td><td>' + done.toFixed(1) + '%</td></tr>';
         }).join('') || '<tr><td colspan="4" style="color:#666;">\uC9C0\uC810\uBCC4 \uC9D1\uACC4 \uC5C6\uC74C</td></tr>';
     }
-    renderDailyReportDashboard();
 }
 
 function downloadJsonBackup(filename, data) {
@@ -3515,7 +3034,6 @@ function resetLocalRoomStateAfterAdminClear() {
     refreshAllMarkers();
     updateLeaderboard();
     updateMyStats();
-    if (typeof updateIncentive === 'function') updateIncentive();
     if (typeof refreshMasterDashboard === 'function') refreshMasterDashboard();
 }
 
@@ -3657,14 +3175,12 @@ async function enterMasterAdminMode(user) {
     document.getElementById('current-player-badge').style.display = 'none';
     document.getElementById('my-score-badge').style.display = 'none';
     document.getElementById('my-status-section').style.display = 'none';
-    updateDailyCommentSection();
 
     var ok = await initFirebase();
     if (ok) {
         await loadFromFirebase();
         refreshAllMarkers();
         updateLeaderboard();
-        if (typeof updateIncentive === 'function') updateIncentive();
         await startFirebaseListener();
     }
     if (typeof setBranchFilter === 'function') setBranchFilter('all');
@@ -3692,7 +3208,6 @@ async function masterAdminLogout() {
     document.getElementById('current-player-badge').style.display = 'none';
     document.getElementById('my-score-badge').style.display = 'none';
     document.getElementById('my-status-section').style.display = 'none';
-    updateDailyCommentSection();
     updateMasterChrome();
     showSetup();
     showToast('관리자 모드에서 나왔습니다. 다시 입장할 수 있습니다.');
@@ -3760,7 +3275,6 @@ async function startGameMulti() {
                 await loadFromFirebase();
                 refreshAllMarkers();
                 updateLeaderboard(); 
-                if(typeof updateIncentive === 'function') updateIncentive();
                 await startFirebaseListener();
             } catch (syncErr) {
                 if (isFirebasePermissionError(syncErr)) {
@@ -3844,7 +3358,6 @@ setTimeout(function() {
 const BRANCH_FOCUS = {"수도권1지점": [37.56, 127.00, 11], "수도권2지점": [37.45, 126.90, 11], "수도권3지점": [37.65, 127.05, 11], "중부영업지점": [36.8, 127.15, 10], "서부영업지점": [35.15, 126.90, 11], "경북영업지점": [36.0, 128.6, 10], "경남영업지점": [35.18, 129.13, 11], "기타": [36.5, 127.8, 7]};
 let currentBranch = 'all';
 let currentManager = '';
-let currentIncTab = 'month';
 
 /* 지점 포커스 */
 function setBranchFilter(branch) {
@@ -3869,7 +3382,6 @@ function setBranchFilter(branch) {
     }
     // 담당자 셀렉트 연동: 수기입력 체제로 변경되어 드롭다운 필터링 로직 제거
     refreshAllMarkers();
-    updateIncentive();
 }
 
 /* 담당자 필터 */
@@ -3881,104 +3393,6 @@ function setManagerFilter(mgr) {
         map.flyTo([arr[0], arr[1]], arr[2], {duration: 1.2});
     }
     refreshAllMarkers();
-    updateIncentive();
-}
-
-/* 인센티브 탭 */
-function setIncTab(tab) {
-    currentIncTab = tab;
-    document.querySelectorAll('.inc-tab-btn').forEach((b,i) => {
-        b.classList.toggle('active', ['month','quarter','total'][i] === tab);
-    });
-    updateIncentive();
-}
-
-/* 기간 필터 함수 */
-function inPeriod(ts, period) {
-    if (!ts) return false;
-    const d = new Date(ts), now = new Date();
-    if (period === 'month') {
-        return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
-    } else if (period === 'quarter') {
-        const q = Math.floor(now.getMonth()/3);
-        return d.getFullYear()===now.getFullYear() && Math.floor(d.getMonth()/3)===q;
-    }
-    return true; // total
-}
-
-/* 점수 계산: 신규(미거래)=3점, 기존거래=1점 */
-function calcScore(states, period) {
-    let score = 0, newCnt = 0, oldCnt = 0;
-    Object.entries(states).forEach(([idx, s]) => {
-        if (!isClaimedState(s)) return;
-        if (period !== 'total' && !inPeriod(s.claimed_at, period)) return;
-        const p = getPharmacyByStateKey(idx);
-        if (!p) return;
-        if (!p.is_trading) { score += 3; newCnt++; } 
-        else               { score += 1; oldCnt++; }
-    });
-    return {score, newCnt, oldCnt, total: newCnt+oldCnt};
-}
-
-/* 인센티브 패널 업데이트 */
-function updateIncentive() {
-    const sec = document.getElementById('incentive-section');
-    if (!gameState.currentPlayer) { sec.style.display='none'; return; }
-    sec.style.display = 'block';
-
-    const myStates = {};
-    getClaimedStateEntries().forEach(([i,s]) => {
-        if (s.claimed_by === gameState.currentPlayer) myStates[i] = s;
-    });
-
-    // 지점별 전체 집계
-    const allStates = gameState.pharmacyStates;
-    const byBranch = {};
-    getClaimedStateEntries().forEach(([key, s]) => {
-        const p = getPharmacyByStateKey(key);
-        if (!p) return;
-        if (!byBranch[p.branch]) byBranch[p.branch] = [];
-        byBranch[p.branch].push({s,p});
-    });
-
-    const period = currentIncTab;
-    const myR = calcScore(myStates, period);
-    const periodLabel = {'month':'이번 달','quarter':'이번 분기','total':'누적'}[period];
-
-    let html = `
-    <div class="inc-section">
-      <div class="inc-label">내 실적 (${periodLabel})</div>
-      <div class="inc-row"><span>📍 총 점령</span><span class="inc-val high">${myR.total}개</span></div>
-      <div class="inc-row"><span>🆕 신규 개척 <span class="score-star">×3</span></span><span class="inc-val">${myR.newCnt}개</span></div>
-      <div class="inc-row"><span>🔁 기존 거래처 <span class="score-star">×1</span></span><span class="inc-val">${myR.oldCnt}개</span></div>
-      <div class="inc-row" style="margin-top:4px;border-top:1px solid #444;padding-top:6px;">
-        <span>⭐ 인센티브 점수</span><span class="inc-val" style="font-size:15px;">${myR.score}점</span>
-      </div>
-    </div>`;
-
-    // 지점별 순위
-    const branchRows = Object.keys(byBranch).map(br => {
-        let sc=0,nc=0,oc=0;
-        getClaimedStateEntries().forEach(([key, s]) => {
-            const p = getPharmacyByStateKey(key);
-            if (!p || p.branch !== br) return;
-            if (period !== 'total' && !inPeriod(s.claimed_at, period)) return;
-            if (!p.is_trading) { sc+=3; nc++; } else { sc+=1; oc++; }
-        });
-        return {br, sc, nc, oc, total:nc+oc};
-    }).sort((a,b)=>b.sc-a.sc);
-
-    html += `<div class="inc-section" style="margin-top:12px;">
-      <div class="inc-label">🏢 지점별 랭킹</div>`;
-    branchRows.forEach((r,i) => {
-        const medal = ['🥇','🥈','🥉'][i] || (i+1)+'.';
-        html += `<div class="inc-row">
-          <span>${medal} ${r.br}</span>
-          <span class="inc-val">${r.sc}점 (${r.total}개)</span>
-        </div>`;
-    });
-    html += '</div>';
-    document.getElementById('inc-content').innerHTML = html;
 }
 
 /* 팝업에 거래유무 표시 추가 */
@@ -3986,25 +3400,17 @@ const _origShowPopup = window.showPopup || null;
 
 /* 현재거래유무 토글 */
 function toggleTrading(idx, val) {
-    const now = new Date().toISOString();
     PHARMACY_DATA[idx].is_trading = val;
-    PHARMACY_DATA[idx].trading_updated_at = now;
-    PHARMACY_DATA[idx].trading_updated_by = gameState.currentPlayer || 'master-admin';
-    recordLocalInput(idx, PHARMACY_DATA[idx].trading_updated_by, now);
     document.querySelectorAll('.trade-btn').forEach(b => b.classList.remove('active-yes','active-no'));
     if (val) document.getElementById('tbtn-yes-'+idx).classList.add('active-yes');
     else     document.getElementById('tbtn-no-'+idx).classList.add('active-no');
     if (typeof saveToFirebase === 'function' && window._gameMode === 'online') {
         // Firebase에 is_trading 저장
-        const imp = window._fbImports;
-        if (imp && window._db && window._roomId) {
-            const upd = {};
-            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/is_trading'] = val;
-            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/trading_updated_at'] = now;
-            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/trading_updated_by'] = PHARMACY_DATA[idx].trading_updated_by;
-            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/last_input_at'] = now;
-            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/last_input_by'] = PHARMACY_DATA[idx].trading_updated_by;
-            ensureFirebaseAuth().then(function(ok) {
+            const imp = window._fbImports;
+            if (imp && window._db && window._roomId) {
+                const upd = {};
+                upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/is_trading'] = val;
+                ensureFirebaseAuth().then(function(ok) {
                 if (!ok) return;
                 return imp.update(imp.ref(window._db), upd);
             }).catch(function(e) {
@@ -4013,14 +3419,6 @@ function toggleTrading(idx, val) {
             });
         }
     }
-    updateIncentive();
-}
-
-/* updateLeaderboard 후 인센티브도 갱신 */
-const _origLB = updateLeaderboard;
-window.updateLeaderboard = function() {
-    _origLB();
-    updateIncentive();
 };
 
 /* Nationwide pharmacy and region search */
@@ -4144,10 +3542,10 @@ function matchesAllSearchTerms(haystack, terms) {
 
 function getSearchStatus(row) {
     const state = getStateByIndex(row.idx);
-    if (isUnavailableState(state)) return { dot: '\uD83D\uDEAB', label: '\uC810\uB839\uBD88\uAC00' };
-    if (isClaimedState(state)) return { dot: '\uD83D\uDFE2', label: '\uC810\uB839\uB428' };
-    if (row.p.priority_target) return { dot: '\u2B50', label: '\uC6B0\uC120\uC120\uC810' };
-    return { dot: '\u26AA', label: '\uBBF8\uC810\uB839' };
+    if (isUnavailableState(state)) return { dot: '\u25CF', label: '\uC810\uB839\uBD88\uAC00', color: '#CBD5E1', bg: 'rgba(148,163,184,0.16)', border: '#94A3B8' };
+    if (isClaimedState(state)) return { dot: '\u25CF', label: '\uC810\uB839\uB428', color: '#86EFAC', bg: 'rgba(34,197,94,0.16)', border: '#22C55E' };
+    if (row.p.priority_target) return { dot: '\u2605', label: '\uC6B0\uC120 \uBBF8\uC810\uB839', color: '#FDE68A', bg: 'rgba(250,204,21,0.16)', border: '#FACC15' };
+    return { dot: '\u25CB', label: '\uBBF8\uC810\uB839', color: '#93C5FD', bg: 'rgba(59,130,246,0.13)', border: '#60A5FA' };
 }
 
 function buildSearchRows(term) {
@@ -4289,14 +3687,14 @@ function showSearchResultList(results, options = {}) {
         const status = getSearchStatus({p, idx});
         const priority = p.priority_target ? '<span style="color:#FFD166;font-weight:800;">\u2B50</span> ' : '';
         const regionText = [p.region, p.district, dong].filter(Boolean).join(' ');
-        html += '<div onclick="selectSearchResult(' + idx + ')" style="padding:9px 10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;line-height:1.45;transition:background .2s;border-radius:8px;">'
-            + '<div style="display:flex;align-items:center;gap:6px;">'
-            + '<span>' + status.dot + '</span>' + priority
-            + '<strong style="font-size:13px;color:#fff;">' + escapeSearchHtml(p.name) + '</strong>'
+        html += '<div onclick="selectSearchResult(' + idx + ')" style="padding:10px 11px;cursor:pointer;border:1px solid rgba(255,255,255,0.08);border-left:4px solid ' + status.border + ';background:rgba(255,255,255,0.045);font-size:12px;line-height:1.45;transition:background .2s;border-radius:10px;margin-bottom:7px;">'
+            + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
+            + '<strong style="font-size:14px;color:#fff;line-height:1.35;">' + priority + escapeSearchHtml(p.name) + '</strong>'
+            + '<span style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;border:1px solid ' + status.border + ';background:' + status.bg + ';color:' + status.color + ';border-radius:999px;padding:2px 7px;font-size:10px;font-weight:900;">' + status.dot + ' ' + status.label + '</span>'
             + '</div>'
-            + '<div style="font-size:10px;color:#93C5FD;margin-top:2px;">' + escapeSearchHtml(matchType || '') + ' \u00B7 ' + escapeSearchHtml(regionText || '-') + '</div>'
-            + '<div style="font-size:10px;color:#888;margin-top:2px;">' + escapeSearchHtml((p.address || '').substring(0, 58)) + ((p.address || '').length > 58 ? '...' : '') + '</div>'
-            + '<div style="font-size:10px;color:#aaa;margin-top:2px;">' + escapeSearchHtml(p.branch || '-') + ' \u00B7 ' + escapeSearchHtml(status.label) + '</div>'
+            + '<div style="font-size:11px;color:#93C5FD;margin-top:4px;font-weight:800;">' + escapeSearchHtml(regionText || '-') + ' \u00B7 ' + escapeSearchHtml(matchType || '') + '</div>'
+            + '<div style="font-size:11px;color:#B6C2D6;margin-top:3px;">' + escapeSearchHtml(p.address || '-') + '</div>'
+            + '<div style="font-size:10px;color:#94A3B8;margin-top:3px;">' + escapeSearchHtml(p.branch || '-') + ' \u00B7 ' + escapeSearchHtml(p.market_type || '-') + '</div>'
             + '</div>';
     });
     container.innerHTML = html;
@@ -4365,8 +3763,6 @@ window.showSearchSuggestions = function() {
 const _origSG = startGame;
 window.startGame = function() {
     _origSG();
-    document.getElementById('incentive-section').style.display = 'block';
-    updateIncentive();
     // 초기 로드 시 지점 칩에 약국 수 배지 표시
     setBranchFilter('all');
 };
