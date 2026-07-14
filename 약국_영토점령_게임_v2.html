@@ -2618,7 +2618,8 @@ window._roomId = _roomId;
 
 /** GitHub에 배포한 HTML에서 허용할 마스터 관리자 이메일 (Firebase Auth 사용자와 동일해야 함) */
 var MASTER_ADMIN_EMAILS = [
-    'kimwr@fndkorea.com'
+    'kimwr@fndkorea.com',
+    'woori.kim.work@gmail.com'
 ].map(function(e) { return String(e).trim().toLowerCase(); }).filter(Boolean);
 
 window._isMasterAdmin = false;
@@ -3610,7 +3611,7 @@ async function submitMasterLogin() {
         return;
     }
     if (!isMasterAdminEmail(email)) {
-        showToast('⚠️ 이 계정은 마스터 관리자로 등록되지 않았습니다');
+        showToast('⚠️ 이 계정은 마스터 관리자로 등록되지 않았습니다: ' + email);
         return;
     }
     var imp = window._fbImports;
@@ -3627,7 +3628,13 @@ async function submitMasterLogin() {
         await imp.signInWithEmailAndPassword(_auth, email, password);
     } catch (e) {
         console.error(e);
-        showToast('⚠️ 로그인 실패: ' + (e.message || e.code || '오류'));
+        var msg = e && e.code ? e.code : (e.message || '오류');
+        if (msg.indexOf('auth/invalid-credential') >= 0 || msg.indexOf('auth/wrong-password') >= 0) {
+            msg = '이메일 또는 비밀번호가 맞지 않습니다';
+        } else if (msg.indexOf('auth/user-not-found') >= 0) {
+            msg = 'Firebase Authentication에 없는 이메일입니다';
+        }
+        showToast('⚠️ 로그인 실패: ' + msg);
         return;
     }
     enterMasterAdminMode(_auth.currentUser);
