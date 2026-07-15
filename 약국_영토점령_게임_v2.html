@@ -3540,6 +3540,17 @@ function matchesAllSearchTerms(haystack, terms) {
     });
 }
 
+function getMatchedSearchTerms(haystack, terms) {
+    return terms.filter(term => {
+        const candidates = getSearchCandidates(term);
+        return candidates.some(candidate => haystack.includes(candidate));
+    });
+}
+
+function isSpecificSearchTerm(term) {
+    return /(구|군|동|가|읍|면|리)$/.test(String(term || ''));
+}
+
 function getSearchStatus(row) {
     const state = getStateByIndex(row.idx);
     if (isUnavailableState(state)) return { dot: '\u25CF', label: '\uC810\uB839\uBD88\uAC00', color: '#CBD5E1', bg: 'rgba(148,163,184,0.16)', border: '#94A3B8' };
@@ -3555,7 +3566,7 @@ function buildSearchRows(term) {
     const compactCandidates = getSearchCandidates(raw);
     if (!compact) return [];
 
-    return PHARMACY_DATA.map((p, idx) => {
+    const rows = PHARMACY_DATA.map((p, idx) => {
         const name = normalizeSearchText(p.name);
         const address = normalizeSearchText(p.address);
         const region = normalizeSearchText(p.region);
@@ -3568,6 +3579,9 @@ function buildSearchRows(term) {
         const haystack = [name, ...regionFields, branch, phone].join('|');
         const termMatched = terms.length > 1 && matchesAllSearchTerms(haystack, terms);
         const regionMatched = regionFields.some(field => includesAnySearchCandidate(field, compactCandidates));
+        const matchedTerms = terms.length > 1 ? getMatchedSearchTerms(haystack, terms) : [];
+        const lastTerm = terms[terms.length - 1] || '';
+        const lastTermMatched = !!lastTerm && matchedTerms.includes(lastTerm);
 
         let score = 0;
         let matchType = '';
@@ -3581,17 +3595,23 @@ function buildSearchRows(term) {
         else if (region && includesAnySearchCandidate(region, compactCandidates)) { score = 60; matchType = '\uC2DC/\uB3C4 \uC77C\uCE58'; }
         else if (regionMatched) { score = 55; matchType = '\uC9C0\uC5ED/\uC8FC\uC18C \uC77C\uCE58'; }
         else if (phone && phone.includes(compact)) { score = 40; matchType = '\uC804\uD654\uBC88\uD638 \uC77C\uCE58'; }
+        else if (terms.length > 1 && matchedTerms.length >= Math.max(1, terms.length - 1) && (lastTermMatched || matchedTerms.some(isSpecificSearchTerm))) {
+            score = 42 + matchedTerms.length * 8 + (lastTermMatched ? 18 : 0);
+            matchType = '\uBD80\uBD84 \uC9C0\uC5ED \uC77C\uCE58';
+        }
         if (!score) return null;
 
         if (p.priority_target) score += 8;
         if (p.branch === currentBranch) score += 4;
-        return { p, idx, score, matchType, dong: dongText };
+        return { p, idx, score, matchType, dong: dongText, matchedTerms };
     }).filter(Boolean).sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return String(a.p.name || '').localeCompare(String(b.p.name || ''), 'ko');
     });
-}
 
+    const strictRows = rows.filter(row => row.score >= 55 || terms.length <= 1);
+    return strictRows.length ? strictRows : rows;
+}
 function getVisibleSearchResults(results) {
     return results.filter(({p, idx}) => {
         if (!p.lat || !p.lng || !pharmacyMarkers[idx]) return false;
