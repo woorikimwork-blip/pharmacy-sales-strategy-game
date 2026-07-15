@@ -431,13 +431,18 @@
 .trading-badge.no {background:rgba(233,69,96,.2);color:#e94560;border:1px solid #e94560;}
 
 /* 현재거래 토글 팝업 */
-.trade-toggle{display:flex;gap:6px;margin-top:8px;}
-.trade-btn{flex:1;padding:7px;border-radius:8px;border:1.5px solid #444;
-  background:transparent;color:#aaa;font-size:12px;font-weight:700;cursor:pointer;
-  font-family:inherit;transition:all .2s;}
-.trade-btn.active-yes{border-color:#4CAF50;background:rgba(50,205,50,.2);color:#90EE90;}
-.trade-btn.active-no {border-color:#e94560;background:rgba(233,69,96,.2);color:#e94560;}
-
+.trade-current{display:flex;align-items:center;justify-content:center;gap:6px;
+  border-radius:10px;padding:9px 10px;margin:5px 0 8px;font-size:13px;font-weight:900;
+  border:1.5px solid rgba(255,255,255,.18);}
+.trade-current.yes{background:rgba(34,197,94,.18);border-color:#22C55E;color:#BBF7D0;}
+.trade-current.no{background:rgba(244,63,94,.20);border-color:#F43F5E;color:#FDA4AF;}
+.trade-toggle{display:flex;gap:8px;margin-top:8px;}
+.trade-btn{flex:1;padding:9px 7px;border-radius:10px;border:1.5px solid #555;
+  background:rgba(255,255,255,.05);color:#B6C2D6;font-size:12px;font-weight:900;cursor:pointer;
+  font-family:inherit;transition:all .2s;line-height:1.25;}
+.trade-btn .sub{display:block;font-size:9px;font-weight:800;opacity:.78;margin-top:2px;}
+.trade-btn.active-yes{border-color:#22C55E;background:#16A34A;color:#fff;box-shadow:0 0 0 2px rgba(34,197,94,.18);}
+.trade-btn.active-no {border-color:#F43F5E;background:#E11D48;color:#fff;box-shadow:0 0 0 2px rgba(244,63,94,.18);}
 /* 점수 뱃지 */
 .score-star{font-size:10px;color:#FFD700;margin-left:3px;}
 
@@ -1954,15 +1959,17 @@ function buildPopup(idx) {
     const marketBadge = `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${getBaseColor(pharm.market_type)}33;color:${getBaseColor(pharm.market_type)};font-weight:700;">${pharm.market_type}</span>`;
     const priorityBadge = getPriorityBadge(pharm);
 
+    const tradingStatusClass = pharm.is_trading ? 'yes' : 'no';
+    const tradingStatusText = pharm.is_trading ? '현재 거래중' : '현재 미거래';
     const tradingHTML = `
-        <div style="margin-top:8px;">
-            <div style="font-size:10px;color:#777;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">현재거래유무</div>
+        <div style="margin-top:10px;">
+            <div style="font-size:10px;color:#9CA3AF;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;font-weight:800;">현재 거래 상태</div>
+            <div class="trade-current ${tradingStatusClass}">${pharm.is_trading ? '✅' : '❌'} ${tradingStatusText}</div>
             <div class="trade-toggle">
-                <button class="trade-btn ${pharm.is_trading ? 'active-yes' : ''}" id="tbtn-yes-${idx}" onclick="toggleTrading(${idx}, true)">✅ 거래중</button>
-                <button class="trade-btn ${!pharm.is_trading ? 'active-no' : ''}" id="tbtn-no-${idx}" onclick="toggleTrading(${idx}, false)">❌ 미거래</button>
+                <button class="trade-btn ${pharm.is_trading ? 'active-yes' : ''}" id="tbtn-yes-${idx}" onclick="toggleTrading(${idx}, true)">✅ 거래중<span class="sub">${pharm.is_trading ? '현재 선택됨' : '거래중으로 변경'}</span></button>
+                <button class="trade-btn ${!pharm.is_trading ? 'active-no' : ''}" id="tbtn-no-${idx}" onclick="toggleTrading(${idx}, false)">❌ 미거래<span class="sub">${!pharm.is_trading ? '현재 선택됨' : '미거래로 변경'}</span></button>
             </div>
         </div>`;
-
     return `<div class="claim-popup">
         <div class="pharmacy-name">${pharm.name}</div>
         <div class="pharmacy-meta">
@@ -3401,16 +3408,26 @@ const _origShowPopup = window.showPopup || null;
 /* 현재거래유무 토글 */
 function toggleTrading(idx, val) {
     PHARMACY_DATA[idx].is_trading = val;
-    document.querySelectorAll('.trade-btn').forEach(b => b.classList.remove('active-yes','active-no'));
-    if (val) document.getElementById('tbtn-yes-'+idx).classList.add('active-yes');
-    else     document.getElementById('tbtn-no-'+idx).classList.add('active-no');
+    const yesBtn = document.getElementById('tbtn-yes-' + idx);
+    const noBtn = document.getElementById('tbtn-no-' + idx);
+    if (yesBtn && noBtn) {
+        yesBtn.classList.toggle('active-yes', val);
+        noBtn.classList.toggle('active-no', !val);
+        yesBtn.innerHTML = '✅ 거래중<span class="sub">' + (val ? '현재 선택됨' : '거래중으로 변경') + '</span>';
+        noBtn.innerHTML = '❌ 미거래<span class="sub">' + (!val ? '현재 선택됨' : '미거래로 변경') + '</span>';
+    }
+    const current = document.querySelector('.trade-current');
+    if (current) {
+        current.classList.toggle('yes', val);
+        current.classList.toggle('no', !val);
+        current.textContent = (val ? '✅ 현재 거래중' : '❌ 현재 미거래');
+    }
     if (typeof saveToFirebase === 'function' && window._gameMode === 'online') {
-        // Firebase에 is_trading 저장
-            const imp = window._fbImports;
-            if (imp && window._db && window._roomId) {
-                const upd = {};
-                upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/is_trading'] = val;
-                ensureFirebaseAuth().then(function(ok) {
+        const imp = window._fbImports;
+        if (imp && window._db && window._roomId) {
+            const upd = {};
+            upd['rooms/'+window._roomId+'/pharmacies/'+getPharmacyKey(idx)+'/is_trading'] = val;
+            ensureFirebaseAuth().then(function(ok) {
                 if (!ok) return;
                 return imp.update(imp.ref(window._db), upd);
             }).catch(function(e) {
@@ -3420,7 +3437,6 @@ function toggleTrading(idx, val) {
         }
     }
 };
-
 /* Nationwide pharmacy and region search */
 function normalizeSearchText(value) {
     return String(value || '')
