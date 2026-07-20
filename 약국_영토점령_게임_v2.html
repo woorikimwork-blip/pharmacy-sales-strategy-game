@@ -368,7 +368,12 @@
             transition: all 0.2s;
             white-space: nowrap;
         }
-        .chip.active { border-color: #fff; }
+        .chip.active {
+            border-color: #fff !important;
+            color: #fff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.22), 0 8px 20px rgba(0,0,0,0.35);
+        }
 
         /* ACHIEVEMENT */
         #achievement-banner {
@@ -2144,15 +2149,37 @@ function applyVisibility(idx, m) {
 }
 
 // =================== FILTER / VIEW ===================
+function getMarketFilterStyle(filter, active) {
+    const styles = {
+        all: { bg: '#E94560', soft: 'rgba(233,69,96,0.18)', fg: '#FFFFFF', muted: '#FF8CA0', border: '#E94560', label: '전체' },
+        '외국인관광': { bg: '#E84040', soft: 'rgba(232,64,64,0.16)', fg: '#FFFFFF', muted: '#FF8A8A', border: '#E84040', label: '🌍 외국인관광' },
+        '유동인구': { bg: '#2F9DD3', soft: 'rgba(74,171,219,0.16)', fg: '#FFFFFF', muted: '#7DD3FC', border: '#4AABDB', label: '🚶 유동인구' },
+        '성형·피부과': { bg: '#7C3AED', soft: 'rgba(142,61,255,0.16)', fg: '#FFFFFF', muted: '#A78BFA', border: '#8E3DFF', label: '💉 성형·피부과' },
+        '주거': { bg: '#2E9D46', soft: 'rgba(76,175,80,0.16)', fg: '#FFFFFF', muted: '#86EFAC', border: '#4CAF50', label: '🏡 주거' },
+        priority: { bg: '#B8860B', soft: 'rgba(255,209,102,0.18)', fg: '#FFFFFF', muted: '#FFD166', border: '#FFD166', label: '⭐ 우선 선점' }
+    };
+    const s = styles[filter] || styles.all;
+    return {
+        label: (active ? '✓ ' : '') + s.label,
+        background: active ? s.bg : s.soft,
+        color: active ? s.fg : s.muted,
+        borderColor: active ? '#FFFFFF' : s.border
+    };
+}
+
 function setFilter(f) {
     currentFilter = f;
     document.querySelectorAll('#filter-chips .chip').forEach(c => {
         const active = c.dataset.filter === f;
+        const style = getMarketFilterStyle(c.dataset.filter, active);
         c.classList.toggle('active', active);
+        c.textContent = style.label;
+        c.style.background = style.background;
+        c.style.color = style.color;
+        c.style.borderColor = style.borderColor;
     });
     refreshAllMarkers();
 }
-
 function setViewMode(mode) {
     currentViewMode = mode;
     document.querySelectorAll('[data-mode]').forEach(c => {
