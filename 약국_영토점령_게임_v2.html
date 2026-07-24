@@ -1356,7 +1356,7 @@
 <div id="topbar">
     <h1>🏆 약국 <span>영토점령</span> 게임</h1>
     <div style="font-size:12px;color:#aaa;">총 16,764개 약국</div>
-    <div id="env-mode-badge" aria-live="polite">테스트 모드</div>
+    <div id="env-mode-badge" aria-live="polite">운영 모드</div>
     <div id="master-admin-banner" aria-live="polite">🛡️ 마스터 관리자 모드</div>
     <div class="spacer"></div>
 
@@ -1605,7 +1605,7 @@ let currentViewMode = 'all';
 let panelOpen = true;
 let map;
 
-var APP_ENV = window.APP_ENV || 'test'; // 7/15 실전 테스트 후, 7/27 운영 전환 시 'production'으로 변경
+var APP_ENV = window.APP_ENV || 'production'; // 7/27 실제 운영 기본 방
 var APP_ENV_CONFIG = window.APP_ENV_CONFIG || {
     test: {
         label: '테스트 모드',
