@@ -1672,11 +1672,22 @@ function showSetup() {
 function hideSetup() {
     document.getElementById('setup-panel').style.display = 'none';
     document.body.classList.remove('setup-active');
+    const legacyPlayersArea = document.getElementById('existing-players-area');
+    if (legacyPlayersArea) legacyPlayersArea.style.display = 'none';
+    if (map && typeof map.invalidateSize === 'function') {
+        setTimeout(() => map.invalidateSize(), 50);
+    }
 }
 
 function updateExistingPlayers() {
     const area = document.getElementById('existing-players-area');
     const list = document.getElementById('existing-players-list');
+    if (!area || !list) return;
+    if (!area.closest('#setup-panel')) {
+        area.style.display = 'none';
+        list.innerHTML = '';
+        return;
+    }
     const names = Object.keys(gameState.players);
 
     if (names.length > 0) {
