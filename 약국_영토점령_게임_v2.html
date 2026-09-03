@@ -2125,11 +2125,12 @@ function refreshAllMarkers() {
     pharmacyMarkers.forEach((m, idx) => refreshMarker(idx));
 }
 
-function applyVisibility(idx, m) {
+function shouldShowMarker(idx) {
     const pharm = PHARMACY_DATA[idx];
     const state = getStateByIndex(idx);
 
     let show = true;
+    if (activeSearchIndexes && !activeSearchIndexes.has(idx)) show = false;
     if (currentFilter === 'priority') {
         if (!pharm.priority_target) show = false;
     } else if (currentFilter !== 'all' && pharm.market_type !== currentFilter) {
@@ -2139,6 +2140,12 @@ function applyVisibility(idx, m) {
     if (currentViewMode === 'unclaimed' && state) show = false;
     if (currentViewMode === 'unavailable' && !isUnavailableState(state)) show = false;
     if (typeof currentBranch !== 'undefined' && currentBranch !== 'all' && currentBranch !== '기타' && pharm.branch !== currentBranch) show = false;
+
+    return show;
+}
+
+function applyVisibility(idx, m) {
+    const show = shouldShowMarker(idx);
 
     if (!markerClusterGroup) return;
     if (show) {
@@ -3656,16 +3663,10 @@ function buildSearchRows(term) {
     return strictRows.length ? strictRows : rows;
 }
 function getVisibleSearchResults(results) {
-    return results.filter(({p, idx}) => {
+    return results.filter(({idx}) => {
+        const p = PHARMACY_DATA[idx];
         if (!p.lat || !p.lng || !pharmacyMarkers[idx]) return false;
-        if (currentFilter === 'priority' && !p.priority_target) return false;
-        if (currentFilter !== 'all' && currentFilter !== 'priority' && p.market_type !== currentFilter) return false;
-        const state = getStateByIndex(idx);
-        if (currentViewMode === 'claimed' && !isClaimedState(state)) return false;
-        if (currentViewMode === 'unclaimed' && state) return false;
-        if (currentViewMode === 'unavailable' && !isUnavailableState(state)) return false;
-        if (typeof currentBranch !== 'undefined' && currentBranch !== 'all' && currentBranch !== '\uAE30\uD0C0' && p.branch !== currentBranch) return false;
-        return true;
+        return shouldShowMarker(idx);
     });
 }
 
@@ -3774,7 +3775,14 @@ window.scrollToMarketFilters = function() {
 window.showPopup = function(idx) {
     const m = pharmacyMarkers[idx];
     if (m && map) {
-        m.openPopup();
+        if (markerClusterGroup && !markerClusterGroup.hasLayer(m)) {
+            markerClusterGroup.addLayer(m);
+        }
+        if (markerClusterGroup && typeof markerClusterGroup.zoomToShowLayer === 'function') {
+            markerClusterGroup.zoomToShowLayer(m, () => m.openPopup());
+        } else {
+            m.openPopup();
+        }
     }
 };
 
