@@ -420,6 +420,9 @@
         .leaflet-popup-tip { background: #1a1a2e !important; }
         .leaflet-popup-content { margin: 0 !important; }
         .leaflet-popup-close-button { color: #aaa !important; font-size: 18px !important; top: 8px !important; right: 8px !important; }
+        .leaflet-tile-pane {
+            filter: invert(0.92) hue-rotate(180deg) brightness(0.62) contrast(1.1) saturate(0.35);
+        }
 
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     
@@ -1769,9 +1772,8 @@ function initMap() {
         preferCanvas: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '©CartoDB',
-        subdomains: 'abcd',
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19
     }).addTo(map);
 
